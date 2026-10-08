@@ -5,6 +5,15 @@ category: "Fixture"
 kind: utility
 #}
 
+{#
+Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/component/content-scope/content-scope-fixture.twig
+Expected: 3 warnings, 0 errors (ComponentContentScope) — the three SHOULD FIRE cases below
+
+This file sits under component/<name>/ on purpose. The rule is in scope only for a path that matches
+/component/<name>/<file>.twig. At the top level of the fixtures folder (the old place) the rule never ran,
+and the fixture passed with zero findings while claiming three.
+#}
+
 {# --- SHOULD FIRE: read from whatever context the caller happened to have --- #}
 
 {% if caller_flag %}

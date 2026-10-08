@@ -86,4 +86,4 @@ Decided: releases are git tags, published on Packagist (RELEASING.md).
 - The licence. Do not add a `LICENSE` file before the owner chooses one.
 - Whether one version number is enough for the three sets (issue #874, open question 2).
 - The coding standard (`phpcs`). The moved rules use tabs. A standard needs a decision first.
-- Whether the 16 fixtures without an `Expected:` line get one.
+- Whether the 15 fixtures without an `Expected:` line get one.
