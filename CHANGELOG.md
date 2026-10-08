@@ -4,6 +4,8 @@ All notable changes are listed here, grouped by rule set once rules exist. The f
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-10-08
+
 ### Changed
 
 - **Breaking (0.x):** `TranslationThemeNameRule` moved from `Parisek\LintKit\WordPress\Twig\Rules` to `Parisek\LintKit\Core\Twig\Rules`. A Drupal project follows the same `_x('text', '<theme>', '<theme>')` convention, so the rule is not WordPress-only. The preset registers it when the `themeName` option is given, in any set. The `wordpress` set no longer needs `themeName`. A project that listed the old class in `removeRules` must use the new name.
