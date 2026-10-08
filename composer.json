@@ -4,15 +4,19 @@
     "type": "library",
     "require": {
         "php": ">=8.3",
+        "symfony/yaml": "^6.4 || ^7.0 || ^8.0",
         "vincentlanglet/twig-cs-fixer": "^4.1.1"
     },
     "require-dev": {
-        "phpunit/phpunit": "^11.0 || ^12.0",
-        "phpstan/phpstan": "^2.2"
+        "ergebnis/composer-normalize": "^2.54",
+        "phpstan/phpstan": "^2.2",
+        "phpunit/phpunit": "^11.0 || ^12.0"
     },
     "suggest": {
         "phpstan/extension-installer": "Loads the PHPStan rules of this package without a manual include."
     },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
     "autoload": {
         "psr-4": {
             "Parisek\\LintKit\\": "src/"
@@ -24,14 +28,16 @@
         }
     },
     "config": {
-        "sort-packages": true,
+        "allow-plugins": {
+            "ergebnis/composer-normalize": true
+        },
         "platform": {
             "php": "8.3.0"
-        }
+        },
+        "sort-packages": true
     },
     "scripts": {
+        "phpstan": "phpstan analyse --memory-limit=1G --no-progress",
         "test": "phpunit"
-    },
-    "minimum-stability": "stable",
-    "prefer-stable": true
+    }
 }

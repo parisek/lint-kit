@@ -66,6 +66,9 @@ jobs:
       - name: Run tests
         run: composer test
 
+      - name: Run PHPStan
+        run: composer phpstan
+
       - name: Stamp CHANGELOG
         env:
           VERSION: ${{ inputs.version }}

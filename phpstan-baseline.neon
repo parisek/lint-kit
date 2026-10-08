@@ -1,0 +1,67 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Instanceof between mixed and Twig\\Node\\Expression\\Variable\\ContextVariable will always evaluate to false\.$#'
+			identifier: instanceof.alwaysFalse
+			count: 1
+			path: src/Core/Twig/Rules/CreateAttributeClassArrayRule.php
+
+		-
+			message: '#^Instanceof between Twig\\Node\\Node and Twig\\Node\\Expression\\Variable\\ContextVariable will always evaluate to false\.$#'
+			identifier: instanceof.alwaysFalse
+			count: 1
+			path: src/Core/Twig/Rules/HomeUrlLinkRule.php
+
+		-
+			message: '#^Instanceof between Twig\\Node\\Node and Twig\\Node\\Node will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 2
+			path: src/Core/Twig/Rules/JsonEncodeHtmlAttrRule.php
+
+		-
+			message: '#^Instanceof between Twig\\Node\\Node and Twig\\Node\\Expression\\Variable\\ContextVariable will always evaluate to false\.$#'
+			identifier: instanceof.alwaysFalse
+			count: 1
+			path: src/Core/Twig/Rules/ProseOnRichTextRule.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: src/Core/Twig/Rules/TranslationMissingTypographyRule.php
+
+		-
+			message: '#^Instanceof between Twig\\Node\\Node and Twig\\Node\\Node will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: src/Core/Twig/Rules/TranslationPluralMissingFormatRule.php
+
+		-
+			message: '#^Instanceof between Twig\\Node\\Node and Twig\\Node\\Expression\\Variable\\ContextVariable will always evaluate to false\.$#'
+			identifier: instanceof.alwaysFalse
+			count: 1
+			path: src/Core/Twig/Rules/TypographyFilterRule.php
+
+		-
+			message: '#^Instanceof between Twig\\Node\\Node and Twig\\Node\\Expression\\Variable\\ContextVariable will always evaluate to false\.$#'
+			identifier: instanceof.alwaysFalse
+			count: 2
+			path: src/Core/Twig/Rules/UnguardedOutputRule.php
+
+		-
+			message: '#^Instanceof between Twig\\Node\\Node and Twig\\Node\\Node will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 3
+			path: src/Core/Twig/Rules/UnguardedOutputRule.php
+
+		-
+			message: '#^Instanceof between Twig\\Node\\Node and Twig\\Node\\Expression\\Variable\\ContextVariable will always evaluate to false\.$#'
+			identifier: instanceof.alwaysFalse
+			count: 1
+			path: src/Core/Twig/Rules/WrapperClassesRule.php
+
+		-
+			message: '#^Instanceof between Twig\\Node\\Node and Twig\\Node\\Node will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: src/Core/Twig/Rules/WrapperClassesRule.php
