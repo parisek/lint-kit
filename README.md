@@ -31,7 +31,7 @@ The options are listed in [`src/Twig/Preset.php`](src/Twig/Preset.php).
 
 ## Install
 
-After the first tag and the Packagist submission (see [`RELEASING.md`](RELEASING.md)):
+The package is on Packagist: [packagist.org/packages/parisek/lint-kit](https://packagist.org/packages/parisek/lint-kit). A project needs no `repositories` entry. The release procedure is in [`RELEASING.md`](RELEASING.md).
 
 ```bash
 composer require --dev "parisek/lint-kit:^0.1"

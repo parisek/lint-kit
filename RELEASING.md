@@ -8,19 +8,14 @@ Tag-driven release flow, the same as `parisek/drupal-kit`. The package is publis
 ddev composer require --dev "parisek/lint-kit:^0.1"
 ```
 
-Before the Packagist submission, add a `vcs` repository entry to the project `composer.json`, and drop it after the submission:
-
-```json
-"repositories": [{ "type": "vcs", "url": "https://github.com/parisek/lint-kit" }]
-```
-
-Checked on a local copy: Composer resolved `^0.1` to `v0.1.0` through such an entry.
+The package page is [packagist.org/packages/parisek/lint-kit](https://packagist.org/packages/parisek/lint-kit). A project needs no `repositories` entry. Packagist listed `v0.1.0` with the MIT licence on 2026-10-08.
 
 ## One-time setup (the owner)
 
-1. Submit `https://github.com/parisek/lint-kit` at packagist.org and enable the GitHub webhook.
-2. Set a tag protection rule on `v*` in the repository settings.
-3. Let the `github-actions` bot push to `main`. The `Stamp Release` workflow commits the stamped changelog directly. A branch protection rule that blocks it breaks the automatic path.
+Done: the package is submitted to Packagist, and the first tag synced.
+
+1. Set a tag protection rule on `v*` in the repository settings.
+2. Let the `github-actions` bot push to `main`. The `Stamp Release` workflow commits the stamped changelog directly. A branch protection rule that blocks it breaks the automatic path.
 
 ## Prerequisites
 
