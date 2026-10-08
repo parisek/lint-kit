@@ -66,7 +66,9 @@ There is no `composer.lock` in git. CI resolves the latest tree the constraints 
 - Namespaces changed from `PortaDesign\TwigCsFixer\Rules` to `Parisek\LintKit\<Set>\Twig\Rules`. Class names did not change.
 - Client names in docblocks and fixtures became neutral words, because this repository is public.
 
-**PHPStan baseline.** `phpstan-baseline.neon` holds 15 findings in the moved rules. They are `instanceof` checks that guard two Twig versions (`ContextVariable` against `NameExpression`) and defensive checks in loops. They are not bugs. Remove the entries when the Twig floor makes the checks dead.
+**PHPStan baseline.** `phpstan-baseline.neon` holds 8 findings in the moved rules: 7 `Node instanceof Node` checks in loops and 1 redundant `is_string()`. They are not bugs. Fix them when you touch the rule.
+
+**Twig floor.** `twig/twig` is `^3.15`, the floor `twig-cs-fixer` itself sets. No older Twig is supported. `ContextVariable` extends `NameExpression` (checked in Twig 3.30), so a rule checks `NameExpression` alone. The earlier `|| instanceof ContextVariable` branches were dead code and are gone.
 
 ## Language
 
@@ -83,7 +85,6 @@ Everything in this repository is English, in ASD-STE100 style: one idea per sent
 
 Decided: releases are git tags, published on Packagist (RELEASING.md).
 
-- The licence. Do not add a `LICENSE` file before the owner chooses one.
 - Whether one version number is enough for the three sets (issue #874, open question 2).
 - The coding standard (`phpcs`). The moved rules use tabs. A standard needs a decision first.
 - Whether the 15 fixtures without an `Expected:` line get one.

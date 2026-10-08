@@ -49,4 +49,8 @@ composer phpstan
 - Decision record: [`docs/adr/`](docs/adr/).
 - Fixtures: [`tests/Fixtures/README.md`](tests/Fixtures/README.md).
 
+## Licence
+
+MIT. See [`LICENSE`](LICENSE).
+
 Related: [`test-kit`](https://github.com/parisek/test-kit), the testing and comparison tool.
