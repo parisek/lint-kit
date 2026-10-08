@@ -1,0 +1,40 @@
+{#
+name: "Template Order Fail"
+description: ""
+category: "Test"
+#}
+{#
+	This block is deliberately NOT part of the metadata comment above (#452).
+
+	The manifest fingerprint drops a leading comment that carries a `name:`
+	line, because `usage:` and `category:` are per-project and regenerated
+	downstream (#227). A fixture's Run: and Expected: lines are the opposite —
+	skeleton-owned, and the only thing carrying the fixture's claim to truth.
+	Kept inside that block, an upstream rewrite is invisible to drift
+	detection: downstream keeps the old wording, verify reports OK, and
+	fixtures.spec.js then fails on a fixture it cannot parse.
+	Measured on eprukaz, 2026-07-30.
+#}
+{#
+TemplateOrderRule fixture — FAIL case.
+
+Component template that violates the canonical top-level order. The
+`set component` statement appears BEFORE the `extends` directive — the
+parent template can't be loaded yet because the child hasn't declared
+which parent it extends.
+
+Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/template-order-fail-fixture.twig
+Expected: 1 warning, 0 errors (TemplateOrder)
+#}
+{% set component = {
+	name: 'template-order-fail',
+	id: content.wrapper_id,
+	classes: [
+		'my-16',
+		content.wrapper_classes,
+	],
+} %}
+{% extends '@component/component/component.twig' %}
+{% block content %}
+	<p>set component appeared before extends.</p>
+{% endblock %}

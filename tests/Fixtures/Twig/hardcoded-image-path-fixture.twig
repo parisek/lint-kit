@@ -1,0 +1,65 @@
+{# === HardcodedImagePathRule fixture ===================================
+Verifies AST-aware detection of `src: '/...'` hash entries that bypass
+`templateUrl`. Replaces the Python `hardcoded-image-path` regex.
+
+The Python check was scoped to styleguide files (filename substring);
+the AST port is universal — production templates never carry literal
+`src:` hashes (they go through `content.image`), so widening costs
+nothing and catches stray hardcoded paths in any template.
+
+Skip conditions inherited from the Python regex:
+- `templateUrl ~ '...'` parses as BinaryConcat, not ConstantExpression — skipped
+- non-`src` keys (any other hash field) — skipped
+- non-string values (variables, function calls) — skipped
+- paths not starting with `/` — skipped (relative URLs are allowed)
+
+Note: the double-quoted variant (`src: "/foo.jpg"`) would also fire the rule, but
+the project's SingleQuoteRule rejects double-quoted strings before this rule can
+even run, so a dedicated test case for that path stays out of the fixture.
+
+Run from repo root:
+
+vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/hardcoded-image-path-fixture.twig
+
+Expected: 4 warnings, 0 errors (HardcodedImagePath) — sections 1, 5, 7, 8
+====================================================================== #}
+
+{# 1) FAIL: bare hardcoded path with single quotes #}
+{% set image1 = { src: '/images/foo.jpg', alt: 'image' } %}
+
+{# 2) OK: canonical templateUrl concat #}
+{% set image2 = { src: templateUrl ~ '/images/foo.jpg', alt: 'image' } %}
+
+{# 3) OK: relative path (no leading slash) — allowed #}
+{% set image3 = { src: 'images/relative.jpg', alt: 'image' } %}
+
+{# 4) OK: same call with descriptive path via templateUrl #}
+{{ component_picture({ src: templateUrl ~ '/images/inline.jpg', alt: 'image' }) }}
+
+{# 5) FAIL: hardcoded path inside an inline component call #}
+{{ component_picture({ src: '/static/images/inline.jpg', alt: 'image' }) }}
+
+{# 6) OK: non-`src` key with a hardcoded path — rule scope is `src` only #}
+{% set link = { href: '/about', title: 'About' } %}
+
+{# 7) FAIL: hardcoded path inside a list of image objects #}
+{% set gallery = [
+	{ src: '/images/g1.jpg', alt: 'image' },
+	{ src: templateUrl ~ '/images/g2.jpg', alt: 'image' },
+] %}
+
+{# 8) FAIL: nested hash inside a deeper structure #}
+{% set hero = {
+	background: {
+		image: { src: '/images/hero-bg.jpg', alt: 'image' },
+	},
+} %}
+
+{# 9) OK: src value is a variable, not a literal — skipped (no static eval) #}
+{% set image9 = { src: my_path, alt: 'image' } %}
+
+{# 10) OK: src value comes from a function call — skipped #}
+{% set image10 = { src: get_image_url('hero'), alt: 'image' } %}
+
+{# 11) OK: pattern lives inside a Twig comment — comment text isn't parsed as ArrayExpression #}
+{# example: { src: '/images/bad.jpg' } — bad pattern, but commented out #}

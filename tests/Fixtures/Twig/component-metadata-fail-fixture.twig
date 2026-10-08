@@ -1,0 +1,32 @@
+{#
+ComponentMetadataRule fixture — FAIL case.
+
+This metadata block intentionally violates multiple rules so a single lint run surfaces
+every code path: missing 'name' (required, no key), empty 'category' (required non-empty
+for component templates), 'asana' is not a URL, 'drupal' missing leading slash, 'web' is
+a protocol-relative URL (neither a '/' path nor an absolute http(s) URL).
+
+Note: 'description' is intentionally absent — it is an optional key and must NOT trigger
+a warning. If this fixture fires 6 warnings instead of 5, the rule incorrectly treats
+description as required.
+
+Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/component-metadata-fail-fixture.twig
+Expected: 5 warnings, 0 errors (ComponentMetadata)
+
+category: ""
+asana: "TODO-write-asana-url-later"
+drupal: "admin/structure/paragraphs_type/foo"
+web: "//staging.example.com/uvod"
+#}
+{% extends '@component/component/component.twig' %}
+{% set component = {
+	name: 'metadata-fail',
+	id: content.wrapper_id,
+	classes: [
+		'my-16',
+		content.wrapper_classes,
+	],
+} %}
+{% block content %}
+	<p>Bad metadata above.</p>
+{% endblock %}

@@ -1,0 +1,38 @@
+{# Fixture for TranslationTypographyFilterRule. Each block describes the expected behavior. #}
+{# Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/translation-typography-filter-fixture.twig #}
+{# Expected: 4 warnings, 0 errors (TranslationTypographyFilter) — one per FAIL case #}
+{# Note: FAIL 3/4 deliberately carry no printf placeholder — with one they would ALSO trip TranslationPluralMissingFormat (§ 7.6) and this file would stop reporting a single rule. The placeholder was incidental to what they test. #}
+{# Note: every OK case is also kept clean against the OTHER registered rules (button type=, theme-name domain, plain var) so the run emits exactly 4 — only this rule's warnings. If a future rule fires on an OK line, fix the case, don't relax this rule. #}
+
+{# === FAIL 1: _x(…)|typography → use _xt(…) === #}
+<span>{{ _x('Older articles', 'tailwind-base', 'tailwind-base')|typography }}</span>
+
+{# === FAIL 2: __(…)|typography → use __t(…) === #}
+<span>{{ __('Read more', 'tailwind-base')|typography }}</span>
+
+{# === FAIL 3: _n(…)|typography → use _nt(…) === #}
+<span>{{ _n('one item', 'many items', 3, 'tailwind-base')|typography }}</span>
+
+{# === FAIL 4: _nx(…)|typography → use _nxt(…) === #}
+<span>{{ _nx('one item', 'many items', 3, 'tailwind-base', 'tailwind-base')|typography }}</span>
+
+{# === OK 5: _x(…)|format(year)|typography — typography's operand is the format filter, not the call; correct form for placeholder strings === #}
+<span>{{ _x('Copyright %s', 'tailwind-base', 'tailwind-base')|format(2026)|typography }}</span>
+
+{# === OK 6: already migrated — no |typography filter to match === #}
+<span>{{ _xt('Newer articles', 'tailwind-base', 'tailwind-base') }}</span>
+
+{# === OK 7: bare translation, no |typography (e.g. aria-label / technical) — out of scope === #}
+<button type="button" aria-label="{{ _x('Close', 'tailwind-base', 'tailwind-base') }}"></button>
+
+{# === OK 8: |typography on a plain variable, not a translation call === #}
+<div>{{ subtitle_text|typography }}</div>
+
+{# === OK 9: |typography on a string literal, not a translation call === #}
+<div>{{ 'PORTA DESIGN'|typography }}</div>
+
+{# === OK 10: |typography on a non-translation function === #}
+<div>{{ component_title('x')|typography }}</div>
+
+{# === OK 11: an intermediate filter sits between the call and |typography — operand is |trim, not the _x() call, so out of scope by design (single-hop predicate) === #}
+<span>{{ _x('Read less', 'tailwind-base', 'tailwind-base')|trim|typography }}</span>

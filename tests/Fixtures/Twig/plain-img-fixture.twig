@@ -1,0 +1,44 @@
+{# === PlainImgRule fixture ============================================
+Verifies token-level detection of plain `<img>` HTML tags. Each section
+labelled "OK" must stay silent; each "FAIL" must trigger one warning.
+
+Run from repo root:
+
+vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/plain-img-fixture.twig
+
+Expected: 5 warnings, 0 errors (PlainImg) — sections 1, 2, 3, 4, 5
+====================================================================== #}
+
+{# 1) FAIL: bare img tag #}
+<img src="/images/hero.jpg" alt="Hero">
+
+{# 2) FAIL: img with multiple attributes #}
+<img src="/images/photo.jpg" alt="Photo" width="800" height="600">
+
+{# 3) FAIL: img with twig interpolation in attributes — still plain HTML #}
+<img src="{{ templateUrl }}/images/logo.svg" alt="{{ name }}">
+
+{# 4) FAIL: img with leading whitespace + tab indent #}
+	<img src="/images/icon.png" alt="Icon">
+
+{# 5) FAIL: img with newline before next attribute (whitespace counts) #}
+<img
+	src="/images/multi-line.jpg"
+	alt="Multi-line"
+>
+
+{# 6) OK: img inside a Twig comment — comments are not TEXT tokens #}
+{# example: <img src="/foo.jpg" alt=""> #}
+
+{# 7) OK: image-set or other tags starting with "image" — no \s after `<img` #}
+<image-set src="/foo.jpg"></image-set>
+
+{# 8) OK: img immediately followed by Twig delimiter — no whitespace #}
+<img{{ image_attributes }}>
+
+{# 9) OK: img inside Twig string literal — tokenizes as STRING, not TEXT #}
+{% set markup = '<img src="/foo.jpg" alt="">' %}
+{{ markup|raw }}
+
+{# 10) OK: component_picture call — the sanctioned abstraction #}
+{% include 'component/picture/picture.twig' with { src: '/images/ok.jpg', alt: 'OK' } only %}

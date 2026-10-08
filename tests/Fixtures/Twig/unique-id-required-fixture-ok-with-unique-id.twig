@@ -1,0 +1,10 @@
+{# Fixture for UniqueIdRequiredRule. OK case — loop.index in DOM ids + uniqueId() called. #}
+
+<section class="component-product-slider">
+	{% set block_id = uniqueId() %}
+	{% for slide in content.slides %}
+		<div id="product-slider-{{ block_id }}-{{ loop.index }}" aria-controls="thumbs-{{ block_id }}-{{ loop.index }}">
+			<button aria-controls="product-slider-{{ block_id }}-{{ loop.index }}">prev</button>
+		</div>
+	{% endfor %}
+</section>

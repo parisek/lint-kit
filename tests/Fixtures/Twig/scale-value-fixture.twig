@@ -1,0 +1,74 @@
+{# === ScaleValueRule fixture ===========================================
+Verifies token-level detection of `prefix-[Npx]` arbitrary values that
+have Tailwind scale equivalents. Replaces the Python `use-scale-value`
+regex.
+
+Hybrid scan over TEXT_TYPE (raw HTML class attrs) and STRING_TYPE
+(Twig string literals inside `classes:` / `create_attribute()`).
+
+Skip conditions inherited from the Python check:
+- prefix not in the spacing/text scale (`bg-[16px]`, `border-[16px]`) — silent
+- px value not in the lookup map (`p-[17px]`, `text-[50px]`) — silent
+- arbitrary values without `px` units (`p-[1rem]`) — pattern misses, silent
+- comment text mentioning the pattern — Twig comments tokenize as COMMENT_TEXT_TYPE, not TEXT/STRING (skipped)
+
+Run from repo root:
+
+vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/scale-value-fixture.twig
+
+Expected: 11 warnings, 0 errors (ScaleValue) — sections 1, 3 (×2), 5, 7, 9, 11 (×2), 13, 15, 17
+====================================================================== #}
+
+{# 1) FAIL: bare HTML class with one offender — p-[16px] → p-4 #}
+<div class="p-[16px]"></div>
+
+{# 2) OK: scale value already used — p-4 #}
+<div class="p-4"></div>
+
+{# 3) FAIL: two offenders in the same class string — p-[16px] + m-[24px] #}
+<div class="p-[16px] m-[24px]"></div>
+
+{# 4) OK: arbitrary value not in scale map — p-[17px] (off-grid) #}
+<div class="p-[17px]"></div>
+
+{# 5) FAIL: gap-x suffix variant lookups via gap base — gap-x-[24px] → gap-x-6 #}
+<div class="gap-x-[24px]"></div>
+
+{# 6) OK: prefix not in scale tables — bg-[16px] is nonsense but rule ignores #}
+<div class="bg-[16px]"></div>
+
+{# 7) FAIL: text size with named scale — text-[24px] → text-2xl #}
+<h2 class="text-[24px]"></h2>
+
+{# 8) OK: text size without named scale — text-[50px] (custom heading) #}
+<h2 class="text-[50px]"></h2>
+
+{# 9) FAIL: variant prefix doesn't shield the suffix — hover:p-[16px] still matches #}
+<button class="hover:p-[16px]"></button>
+
+{# 10) OK: arbitrary unit other than px — p-[1rem] doesn't match the regex #}
+<div class="p-[1rem]"></div>
+
+{# 11) FAIL: twig string literal carrying offenders — p-[20px] + h-[40px] #}
+{% set attrs = create_attribute({ class: ['p-[20px] h-[40px]'] }) %}
+
+{# 12) OK: same string literal but values not in map — p-[3px] + h-[7px] #}
+{% set attrs2 = create_attribute({ class: ['p-[3px] h-[7px]'] }) %}
+
+{# 13) FAIL: separate strings on the same line — m-[32px] in its own token #}
+{% set inline = create_attribute({ class: ['flex', 'm-[32px]'] }) %}
+
+{# 14) OK: separate strings, none with offenders #}
+{% set inline2 = create_attribute({ class: ['flex', 'gap-4'] }) %}
+
+{# 15) FAIL: top/inset positioning prefix — top-[48px] → top-12 #}
+<div class="absolute top-[48px]"></div>
+
+{# 16) OK: top with no scale equivalent — top-[37px] #}
+<div class="absolute top-[37px]"></div>
+
+{# 17) FAIL: max-w via `max` lookup key — max-w-[80px] → max-w-20 #}
+<div class="max-w-[80px]"></div>
+
+{# 18) OK: pattern lives inside a Twig comment — comment text not a TEXT_TYPE token #}
+{# example: p-[16px] — would otherwise fire, but commented out #}

@@ -1,0 +1,13 @@
+{#
+Role: fixture macro
+Shared skeleton file — don't modify without approval.
+#}
+{# ^ MetadataYamlParsesRule fixture — EXEMPT case (macro library in <dir>/<dir>.twig shape).
+
+The first comment above is prose, not YAML: the third line throws when parsed.
+The styleguide never parses a comment under macro/, so the rule stays silent.
+
+Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/macro/
+Expected: 0 warnings, 0 errors (MetadataYamlParses)
+#}
+{% macro get(name) %}<span>{{ name }}</span>{% endmacro %}

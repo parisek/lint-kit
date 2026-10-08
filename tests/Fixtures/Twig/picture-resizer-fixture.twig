@@ -1,0 +1,124 @@
+{# === PictureResizerRule fixture ========================================
+Verifies detection of `component_picture({…})` calls whose `image:` value
+is raw CMS data that never passes through `|resizer`.
+
+A raw entry holds the ORIGINAL upload. Every visitor downloads the full
+file: no AVIF, no srcset. The page renders fine, so nothing else reports it.
+
+Skip conditions (deliberately over-broad, nothing here may warn):
+- a filter chain that contains `resizer` anywhere
+- `merge_resizer(...)`, `placeholder()`, any other function call
+- an array literal (static asset with explicit dimensions)
+- a bare variable (not followable)
+- `?:`, `??`, ternary (branches differ on purpose)
+- look-alike keys (`image_mobile`, `images`) — only the exact key `image`
+- other components that take an `image:` key
+- a Layer A disable comment
+
+Run from repo root:
+
+vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/picture-resizer-fixture.twig
+
+Expected: 5 warnings, 0 errors (PictureResizer) — sections 1, 2, 3, 4, 16
+====================================================================== #}
+
+{# 1) FAIL: raw property access #}
+{{ component_picture({
+	image: item.image,
+	image_classes: 'w-full h-auto',
+}) }}
+
+{# 2) FAIL: raw field of content #}
+{{ component_picture({
+	image: content.awards,
+}) }}
+
+{# 3) FAIL: filter chain without resizer — |first does not resize #}
+{{ component_picture({
+	image: (item.image|first),
+}) }}
+
+{# 4) FAIL: nested property access, another non-resizer filter #}
+{{ component_picture({
+	image: more_item.media.image|slice(0, 1),
+}) }}
+
+{# 5) OK: the sanctioned form #}
+{{ component_picture({
+	image: item.image|resizer(['1200', '', '1920'], ['800', '', '1024']),
+}) }}
+
+{# 6) OK: resizer is not the last filter in the chain #}
+{{ component_picture({
+	image: item.image|resizer(['600', '400', ''])|default([]),
+}) }}
+
+{# 7) OK: merge_resizer builds the shape #}
+{{ component_picture({
+	image: merge_resizer(
+		item.image|resizer(['1920', '', '1280'], ['900', '', '']),
+		item.image_mobile|resizer(['1439', '', '']),
+	),
+}) }}
+
+{# 8) OK: static asset, array literal with explicit dimensions #}
+{{ component_picture({
+	image: [{ src: templateUrl ~ '/images/store-badge.svg', type: 'image/svg+xml', width: 120, height: 40, alt: 'Store' }],
+}) }}
+
+{# 9) OK: variable built earlier — the rule cannot follow it #}
+{% set hero = item.image %}
+{{ component_picture({
+	image: hero,
+}) }}
+
+{# 10) OK: placeholder() fixture #}
+{{ component_picture({
+	image: placeholder({ width: 800, height: 600 })|resizer(['800', '', '']),
+}) }}
+{{ component_picture({
+	image: placeholder({ width: 800, height: 600 }),
+}) }}
+
+{# 11) OK: conditional forms are not inspected (|default compiles to one too) #}
+{{ component_picture({
+	image: item.image ?: placeholder(),
+}) }}
+{{ component_picture({
+	image: item.image ?? [],
+}) }}
+{{ component_picture({
+	image: item.image|default([]),
+}) }}
+{{ component_picture({
+	image: item.has_image ? item.image : null,
+}) }}
+
+{# 12) OK: look-alike keys — only the exact key `image` counts #}
+{{ component_picture({
+	image: item.image|resizer(['600', '', '']),
+	image_mobile: item.image_mobile,
+	images: item.images,
+	image_classes: 'w-full',
+}) }}
+
+{# 13) OK: another component with its own image: key #}
+{{ component_avatar({
+	image: item.image,
+}) }}
+
+{# 14) OK: pre-built hash as a variable — nothing to inspect #}
+{% set picture_args = { image: item.image } %}
+{{ component_picture(picture_args) }}
+
+{# 15) OK: silenced on purpose with Layer A. The warning sits on the line that
+	opens the call, so the comment goes directly above `{{ component_picture(`,
+	also for a multi-line hash (a comment cannot sit inside the hash). #}
+{# twig-cs-fixer-disable-next-line PictureResizer — original needed for print-quality download #}
+{{ component_picture({
+	image: item.print_image,
+	image_classes: 'w-full h-auto',
+}) }}
+
+{# 16) FAIL: the same call without the comment still warns #}
+{{ component_picture({ image: item.print_image }) }}

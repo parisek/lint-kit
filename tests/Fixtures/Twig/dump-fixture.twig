@@ -1,0 +1,40 @@
+{# Fixture for DumpRule. #}
+{# Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/dump-fixture.twig #}
+
+{# === FAIL: bare {% dump %} (no args, dumps the whole context) === #}
+{% dump %}
+
+{# === FAIL: {% dump foo %} === #}
+{% set foo = 'bar' %}
+{% dump foo %}
+
+{# === FAIL: {% dump foo, bar %} === #}
+{% dump foo, bar %}
+
+{# === FAIL: whitespace-controlled {%- dump -%} === #}
+{%- dump foo -%}
+
+{# === FAIL: dump() function call inside output === #}
+{{ dump() }}
+
+{# === FAIL: dump() with arg === #}
+{{ dump(foo) }}
+
+{# === FAIL: dump() inside an expression === #}
+{% if dump(foo) or true %}{% endif %}
+
+{# === OK: word "dump" inside text === #}
+<p>This is a dump truck article.</p>
+
+{# === OK: variable named "dump" === #}
+{% set dump_truck_count = 7 %}
+{{ dump_truck_count }}
+
+{# === OK: literal string "dump" === #}
+{% set label = 'dump-everything' %}
+
+{# === OK: comment containing dump === #}
+{# Use {% dump %} during development only #}
+
+{# === OK: hash key named "dump" === #}
+{% set config = { dump: false, verbose: true } %}

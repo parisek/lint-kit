@@ -1,0 +1,72 @@
+{# Fixture for ButtonTypeRule. #}
+{# Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/button-type-fixture.twig #}
+
+{# === FAIL: bare <button> with no type= attribute === #}
+<button>Click</button>
+
+{# === FAIL: <button> with class but no type === #}
+<button class="px-4 py-2 bg-blue-500">Submit</button>
+
+{# === FAIL: <button> with @click handler but no type === #}
+<button @click="open = true">Open</button>
+
+{# === FAIL: multi-line <button> without type === #}
+<button
+	class="px-4 py-2"
+	@click="doThing()"
+>
+	Multi
+</button>
+
+{# === OK: type="button" inline === #}
+<button type="button">Action</button>
+
+{# === OK: type="submit" inline === #}
+<button type="submit" class="bg-green-500">Save</button>
+
+{# === OK: type='reset' (single quotes) === #}
+<button type='reset'>Reset</button>
+
+{# === OK: multi-line <button> with type === #}
+<button
+	type="button"
+	class="px-4 py-2"
+	@click="doThing()"
+>
+	Multi
+</button>
+
+{# === OK: <button{{ button_attributes }}> — macro idiom, type set at runtime === #}
+{% set button_attributes = create_attribute({ type: 'button', class: 'foo' }) %}
+<button{{ button_attributes }}>Macro</button>
+
+{# === OK: <button … {{ button_attributes }}> — mixed inline + macro === #}
+<button x-popover:button {{ button_attributes }}>Mixed</button>
+
+{# === OK: <button{{ q_attributes }}> — any {{ var }} interpolation accepted (q_attributes) === #}
+{% set q_attributes = create_attribute({ type: 'button', class: 'foo' }) %}
+<button{{ q_attributes }}>Question</button>
+
+{# === OK: <button{{ tab_attrs }}> — any {{ var }} interpolation accepted (_attrs suffix) === #}
+{% set tab_attrs = create_attribute({ type: 'button' }) %}
+<button{{ tab_attrs }}>Tab</button>
+
+{# === OK: <button{{ back_btn }}> — any {{ var }} interpolation accepted (_btn suffix) === #}
+{% set back_btn = create_attribute({ type: 'button' }) %}
+<button{{ back_btn }}>Back</button>
+
+{# === OK: <button{{ random_var }}> — rule trusts the create_attribute idiom, not the variable name === #}
+{% set random_var = create_attribute({ type: 'button', class: 'foo' }) %}
+<button{{ random_var }}>Random</button>
+
+{# === FAIL: <button{{ ... |default(...) }}> — no plain {{ var }} interpolation === #}
+{# Filters / arithmetic / function calls inside the opening tag don't match the relaxed pattern. #}
+<button{{ 'extra'|default('') }}>Filtered</button>
+
+{# === OK: not a <button> — <input type="button"> stays untouched === #}
+<input type="text">
+<input>
+
+{# === OK: word "button" elsewhere in markup === #}
+<div class="button-like">Looks like a button but isn't</div>
+<p>The HTML &lt;button&gt; element is great.</p>

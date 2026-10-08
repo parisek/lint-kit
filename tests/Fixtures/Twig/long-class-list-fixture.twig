@@ -1,0 +1,65 @@
+{# === LongClassListRule fixture ========================================
+Verifies token-level detection of HTML `class="…"` literals that exceed
+the configured threshold (default 120 characters). Forward-walk
+multi-token reconstruction handles class lists that wrap across lines.
+
+Skip conditions:
+- value short enough to fit the limit — silent
+- value contains `{{` or `{%` (Twig-interpolated) — silent
+- pattern lives inside a Twig comment — COMMENT_TEXT_TYPE, not TEXT_TYPE
+- Alpine/Vue dynamic bindings (`:class=`, `x-bind:class=`) — JS object
+  literal, not a static class list
+- per-line opt-out via `{# twig-cs-fixer-disable-next-line LongClassList #}`
+
+Run from repo root:
+
+vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/long-class-list-fixture.twig
+
+Expected: 4 warnings, 0 errors (LongClassList) — sections 1, 3, 5, 7
+====================================================================== #}
+
+{# 1) FAIL: long single-line class — well over 120 chars #}
+<div class="flex flex-col gap-4 justify-between items-center px-6 py-8 border border-gray-200 rounded-2xl shadow-lg hover:shadow-xl bg-white duration-300 ease-in-out transition-all"></div>
+
+{# 2) OK: same intent expressed via create_attribute — no `class="..."` literal at all #}
+{% set attrs = create_attribute({
+	class: [
+		'flex flex-col justify-between items-center',
+		'gap-4 px-6 py-8',
+		'rounded-2xl shadow-lg bg-white',
+		'border border-gray-200',
+		'hover:shadow-xl duration-300 ease-in-out transition-all',
+	],
+}) %}
+<div {{ attrs }}></div>
+
+{# 3) FAIL: class value spans multiple text tokens (whitespace splits them) — reconstructed length > 120 #}
+<section class="isolate overflow-hidden relative px-6 py-24 sm:py-32 lg:px-8 bg-linear-to-br from-primary-500 to-primary-700 via-primary-600">
+</section>
+
+{# 4) OK: short class well under the limit #}
+<button type="button" class="btn btn-primary px-4 py-2"></button>
+
+{# 5) FAIL: long class on element with interleaved attributes — anchor still detected #}
+<a href="#" data-action="open" class="inline-flex gap-x-2 justify-center items-center px-5 py-3 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 shadow-sm bg-white hover:bg-gray-50 font-semibold text-sm text-primary-700" rel="noopener">Open</a>
+
+{# 6) OK: Twig-interpolated class — literal length not what's actually rendered #}
+<div class="card {{ variant_classes }} text-center transition-all duration-300 ease-in-out hover:shadow-xl focus-within:ring-2 focus-within:ring-primary-500"></div>
+
+{# 7) FAIL: class on its own line, value on the next — multi-token + EOL walk #}
+<article
+	class="prose prose-lg prose-headings:font-display selection:bg-primary-100 marker:text-primary-500 prose-a:text-primary-600 selection:text-primary-900 hover:prose-a:underline prose-a:no-underline"
+></article>
+
+{# 8) OK: per-line disable — same long class as #1 but silenced #}
+{# twig-cs-fixer-disable-next-line LongClassList #}
+<div class="flex flex-col gap-4 justify-between items-center px-6 py-8 border border-gray-200 rounded-2xl shadow-lg hover:shadow-xl bg-white duration-300 ease-in-out transition-all"></div>
+
+{# 10) OK: Alpine dynamic binding — :class value is a JS object literal, not a static class list #}
+<span :class="{ 'bg-green-100 text-green-800 border-green-200': status === 'available', 'bg-red-100 text-red-800 border-red-200': status === 'unavailable', 'bg-amber-100 text-amber-800 border-amber-200': status === 'available_from' }"></span>
+
+{# 11) OK: x-bind:class long-form dynamic binding — same exemption as #10 #}
+<span x-bind:class="{ 'bg-green-100 text-green-800 border-green-200 shadow-sm ring-1 ring-green-300': isOpen, 'bg-neutral-100 text-neutral-500 border-neutral-200 shadow-none ring-0': !isOpen }"></span>
+
+{# 9) OK: pattern lives inside a Twig comment — comment text not a TEXT_TYPE token
+example: <div class="this would otherwise fire if it were real markup but it lives inside a comment so it does not match the TEXT_TYPE token scan path"></div> #}

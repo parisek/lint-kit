@@ -1,0 +1,77 @@
+{# Fixture for TranslationThemeNameRule. Each block describes the expected behavior. #}
+{# Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/WordPress/Twig/translation-theme-name-fixture.twig #}
+{# project.slug-dependent: outcomes assume `project.slug: tailwind-base` (parsed from styleguide.yaml). #}
+{# Re-running with a different project.slug would invert most outcomes — only `tailwind-base` runs this fixture. #}
+{# Expected: 12 warnings, 0 errors (TranslationThemeName) when project.slug=tailwind-base — 10 lines fire, two of them twice. Valid only at the project.slug named above; run in a downstream project and every matching literal below becomes a violation instead (29 in sloneek, 2026-07-27). #}
+
+{# === OK: _x with both slots matching project.slug === #}
+{{ _x('Open navigation', 'tailwind-base', 'tailwind-base') }}
+
+{# === OK: __ with matching domain (no context slot) === #}
+{{ __('Submit', 'tailwind-base') }}
+
+{# === OK: _e with matching domain === #}
+{{ _e('Submit', 'tailwind-base') }}
+
+{# === OK: esc_html__ with matching domain === #}
+{{ esc_html__('Title', 'tailwind-base') }}
+
+{# === OK: esc_attr_e with matching domain === #}
+{{ esc_attr_e('Label', 'tailwind-base') }}
+
+{# === OK: _ex (echo + context family) with both slots matching === #}
+{{ _ex('Search', 'tailwind-base', 'tailwind-base') }}
+
+{# === OK: _n with matching domain at index 3 === #}
+{{ _n('1 item', '%d items', count, 'tailwind-base') }}
+
+{# === OK: _nx with both slots matching at indices 3 and 4 === #}
+{{ _nx('1 item', '%d items', count, 'tailwind-base', 'tailwind-base') }}
+
+{# === OK: esc_html_x with both slots matching === #}
+{{ esc_html_x('Read', 'tailwind-base', 'tailwind-base') }}
+
+{# === FAIL × 2: _x with both context AND domain wrong === #}
+{{ _x('Open navigation', 'wrong-theme', 'wrong-theme') }}
+
+{# === FAIL × 1: _x with domain wrong only === #}
+{{ _x('Open navigation', 'tailwind-base', 'wrong-theme') }}
+
+{# === FAIL × 1: _x with context wrong only === #}
+{{ _x('Open navigation', 'wrong-theme', 'tailwind-base') }}
+
+{# === FAIL × 1: __ with wrong domain === #}
+{{ __('Submit', 'wrong-theme') }}
+
+{# === FAIL × 1: _e with wrong domain === #}
+{{ _e('Submit', 'wrong-theme') }}
+
+{# === FAIL × 1: esc_html__ family domain wrong === #}
+{{ esc_html__('Title', 'wrong-theme') }}
+
+{# === FAIL × 1: _n with wrong domain at index 3 === #}
+{{ _n('1 item', '%d items', count, 'wrong-theme') }}
+
+{# === FAIL × 2: _nx with both context (index 3) AND domain (index 4) wrong === #}
+{{ _nx('1 item', '%d items', count, 'wrong-context', 'wrong-theme') }}
+
+{# === FAIL × 2: _x with WordPress 'default' domain in both slots === #}
+{{ _x('Open navigation', 'default', 'default') }}
+
+{# === OK: dynamic context (variable) — caller is dynamic, skipped === #}
+{{ _x('Open navigation', context_var, 'tailwind-base') }}
+
+{# === OK: dynamic domain (variable) — skipped === #}
+{{ _x('Open navigation', 'tailwind-base', domain_var) }}
+
+{# === OK: __ with dynamic domain — skipped === #}
+{{ __('Submit', domain_var) }}
+
+{# === OK: _x with only 1 arg — malformed but skipped per algorithm === #}
+{{ _x('Open navigation') }}
+
+{# === OK: __ with only 1 arg — skipped === #}
+{{ __('Submit') }}
+
+{# === OK: gettext is not in dispatch table — out of scope === #}
+{{ gettext('Hello') }}

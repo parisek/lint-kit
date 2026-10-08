@@ -1,0 +1,123 @@
+{# Fixture for StretchedLinkRelativeRule. Each comment block describes the expected behavior. #}
+{# Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/stretched-link-relative-fixture.twig #}
+
+{# === FAIL: stretched-link with no positioned ancestor anywhere up the chain === #}
+<div class="bg-white">
+	<h3 class="text-xl font-semibold">
+		<a href="/foo" class="stretched-link">Read more</a>
+	</h3>
+</div>
+
+{# === FAIL: ancestor uses absolute, not relative — different positioning intent === #}
+<article class="absolute inset-0">
+	<div class="p-6">
+		<a href="/bar" class="stretched-link">Title</a>
+	</div>
+</article>
+
+{# === FAIL: lookalike token (`relative-1` is not a real Tailwind utility) — must reject === #}
+<div class="relative-1">
+	<a href="/baz" class="stretched-link">Click</a>
+</div>
+
+{# === FAIL: self-relative does NOT count — the ::after must overlay an ancestor #}
+<a href="/self" class="stretched-link relative">Title</a>
+
+{# === OK: direct relative parent === #}
+<article class="relative">
+	<a href="/x" class="stretched-link">Title</a>
+</article>
+
+{# === OK: relative on grandparent ancestor === #}
+<section class="relative overflow-hidden">
+	<div class="grid grid-cols-2">
+		<a href="/y" class="stretched-link">Title</a>
+	</div>
+</section>
+
+{# === OK: variant-prefixed relative (lg:relative) — accepted, mirrors prose convention === #}
+<div class="lg:relative">
+	<a href="/z" class="stretched-link">Title</a>
+</div>
+
+{# === OK: ancestor uses dark:relative — variant prefix accepted === #}
+<div class="dark:relative">
+	<a href="/w" class="stretched-link">Title</a>
+</div>
+
+{# === OK: stretched-link inside Twig string — STRING_TYPE intentionally out of scope === #}
+{% set attrs = create_attribute({ class: ['stretched-link'] }) %}
+<a{{ attrs }} href="/q">Title</a>
+
+{# === OK: no stretched-link, just a relative wrapper — irrelevant to the rule === #}
+<div class="relative">
+	<a href="/normal">Plain link</a>
+</div>
+
+{# === OK: relative on an ancestor whose class is built via create_attribute hash === #}
+{# Mirrors the mandated long-class-list pattern (article-list teaser): the <li> #}
+{# carries `relative` through li_attributes, not a literal class="…". #}
+{% set li_attributes = create_attribute({
+	class: [
+		'group/article relative flex flex-col',
+		'py-10 lg:py-14',
+	],
+}) %}
+<li{{ li_attributes }}>
+	<h3 class="text-xl font-semibold">
+		<a href="/card" class="stretched-link">Card title</a>
+	</h3>
+</li>
+
+{# === FAIL: create_attribute hash ancestor WITHOUT relative — resolution is precise, still flagged === #}
+{# Uses the string class form, exercising the non-array branch of the resolver. #}
+{% set bare_attributes = create_attribute({
+	class: 'group flex flex-col py-10',
+}) %}
+<div{{ bare_attributes }}>
+	<a href="/nope" class="stretched-link">No relative anywhere</a>
+</div>
+
+{# === OK: arbitrary value with `]` in an earlier element must NOT truncate the scan === #}
+{# `grid-cols-[1fr_2fr]` contains `]`; `relative` in a later element must still be seen. #}
+{% set arb_attributes = create_attribute({
+	class: [
+		'grid-cols-[1fr_2fr]',
+		'relative gap-4',
+	],
+}) %}
+<div{{ arb_attributes }}>
+	<a href="/arb" class="stretched-link">Arbitrary-value sibling</a>
+</div>
+
+{# === FAIL: `relative` only via a ternary — conditional class is not credited, still flagged === #}
+{% set cond_attributes = create_attribute({
+	class: [
+		'flex flex-col',
+		content.featured ? 'relative' : '',
+	],
+}) %}
+<div{{ cond_attributes }}>
+	<a href="/cond" class="stretched-link">Conditionally relative</a>
+</div>
+
+{# === OK: a nested `class:` in another value must not shadow the top-level class: === #}
+{# The decoy `class` sits inside a nested hash (brace depth 2); only the real #}
+{# top-level `class: [...]` — which carries `relative` — must be read. #}
+{% set nested_attributes = create_attribute({
+	'data-x': { class: 'decoy-nested' },
+	class: 'flex relative',
+}) %}
+<div{{ nested_attributes }}>
+	<a href="/nested" class="stretched-link">Top-level relative wins</a>
+</div>
+
+{# === OK: a value string containing `) %}` must not truncate args parsing === #}
+{# The args are read to the structural close paren, not a `) %}` text delimiter. #}
+{% set tricky_attributes = create_attribute({
+	'data-note': 'odd ) %} value',
+	class: 'relative flex',
+}) %}
+<div{{ tricky_attributes }}>
+	<a href="/tricky" class="stretched-link">Paren-percent inside a value</a>
+</div>

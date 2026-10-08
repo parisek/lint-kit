@@ -1,0 +1,85 @@
+{# === HeadingArbitraryFontSizeRule fixture ============================
+Verifies that <h1>–<h6> elements with arbitrary `text-[Nunit]` font-size
+classes are flagged. Heading family utilities (`text-display-*`,
+`text-heading-*`, `text-title-*`) are fluid via clamp() and must replace
+inline px / rem / em sizes.
+
+Pattern matches over TEXT_TYPE only — Twig-interpolated class strings
+(`<h1 class="{{ classes }}">`) are out of scope by design.
+
+Run from theme root (in DDEV):
+
+vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/heading-arbitrary-font-size-fixture.twig
+
+Expected: 9 warnings, 0 errors (HeadingArbitraryFontSize)
+	- 9 HeadingArbitraryFontSize warnings on sections 1, 2, 3, 4, 5 (×2), 6, 7, 8.
+	- Plus ScaleValueRule warnings overlap on px-valued sites with named-scale
+		equivalents (sections 4, 5 (×2), 6, 7, and span in section 13). That's the
+		other rule's job — they're listed in `config.php` separately and aren't
+		silenced here, since fixture lints against the full ruleset.
+	- 0 errors.
+====================================================================== #}
+
+{# 1) FAIL: bare px size on h1 — text-[40px] #}
+<h1 class="text-[40px]">Headline</h1>
+
+{# 2) FAIL: rem size on h2 — text-[2.5rem] surrounded by other utilities #}
+<h2 class="mt-3 font-semibold text-[2.5rem] text-balance">Section</h2>
+
+{# 3) FAIL: em size on h3 #}
+<h3 class="text-[1.5em]">Subsection</h3>
+
+{# 4) FAIL: variant-prefixed still triggers — lg:text-[48px] #}
+<h4 class="lg:text-[48px]">Responsive heading</h4>
+
+{# 5) FAIL: two arbitrary sizes on one heading — each fires independently #}
+<h2 class="text-[24px] lg:text-[40px]">Two violations</h2>
+
+{# 6) FAIL: smallest heading level — h6 with text-[16px] #}
+<h6 class="text-[16px]">Footnote heading</h6>
+
+{# 7) FAIL: class attribute uses single quotes — pattern handles both quote styles #}
+<h1 class='text-[60px]'>Single-quoted attribute</h1>
+
+{# 8) FAIL: extra attributes before class — id, data-* should not break match #}
+<h2 id="anchor" data-section="hero" class="text-[44px]">Decorated</h2>
+
+{# 9) OK: named family utility — text-display-lg #}
+<h1 class="text-display-lg">Fluid headline</h1>
+
+{# 10) OK: structural heading utility #}
+<h2 class="mt-3 font-semibold text-heading-lg text-balance">Section</h2>
+
+{# 11) OK: discrete named scale on heading — not arbitrary, doesn't match pattern.
+	(A separate, future HeadingMissingFamilyRule could flag this for not using
+	text-display-* / text-heading-* / text-title-* — out of scope here.) #}
+<h1 class="text-2xl">Named scale</h1>
+
+{# 12) OK: text-balance — named utility, not arbitrary, no unit token #}
+<h1 class="text-balance">Just balance</h1>
+
+{# 13) OK: arbitrary font size on non-heading element — <p>, <div> are not flagged #}
+<p class="text-[40px]">Paragraph copy with custom size</p>
+<div class="text-[2rem]">Decorative text</div>
+<span class="text-[14px]">Caption fragment</span>
+
+{# 14) OK: heading with color value (no length unit) — pattern requires px/rem/em #}
+<h1 class="text-[#ff0000]">Custom color heading</h1>
+<h2 class="text-[var(--brand)]">CSS-variable color</h2>
+
+{# 15) OK: heading with computed value (clamp / calc) — out of pattern scope #}
+<h1 class="text-[clamp(2rem,4vw,3rem)]">Inline clamp</h1>
+
+{# 16) OK: lookalike compound identifier — `mytext-[40px]` is not `text-[40px]` #}
+<h1 class="mytext-[40px]">Custom utility prefix</h1>
+<h2 class="some-text-[40px]">Hyphen-prefixed compound</h2>
+
+{# 17) OK: pattern lives inside a Twig comment — comment text not a TEXT_TYPE token #}
+{# example: <h1 class="text-[40px]"> — would otherwise fire, but commented out #}
+
+{# 18) OK: Twig-interpolated class — out of pattern scope (literal text-[40px] not present in TEXT_TYPE) #}
+{% set classes = 'text-[40px] font-bold' %}
+<h1 class="{{ classes }}">Interpolated classes</h1>
+
+{# 19) OK: heading inside copy text (false-positive guard) — non-element use of <h1 inside text would be quoted/escaped in real templates, this is informational #}
+<p>To use h1 with text-display-lg on a page…</p>

@@ -1,0 +1,63 @@
+{# Fixture for JsonEncodeHtmlAttrRule. Each block describes the expected behavior. #}
+{# Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/json-encode-html-attr-fixture.twig #}
+{# Scoping: rule fires on |json_encode used inside PrintNode or ArrayExpression value, unless escape contract is satisfied. Two safe shapes: |json_encode|e('html_attr'), or |json_encode(<flags including JSON_HEX_QUOT>)|raw. #}
+{# Expected: 7 warnings, 0 errors (JsonEncodeHtmlAttr) — one per FAIL block #}
+
+{# === FAIL × 1: bare |json_encode in raw HTML attribute === #}
+<div data-config="{{ payload|json_encode }}">A</div>
+
+{# === FAIL × 1: |json_encode|raw without flags in raw HTML attribute === #}
+<div data-config="{{ payload|json_encode|raw }}">B</div>
+
+{# === FAIL × 1: |json_encode|raw without flags inside create_attribute === #}
+{% set attrs_b = create_attribute({
+	'data-items': content.items|json_encode|raw,
+}) %}
+<div {{ attrs_b }}>C</div>
+
+{# === FAIL × 1: bare |json_encode inside create_attribute === #}
+{% set attrs_c = create_attribute({
+	'data-items': content.items|json_encode,
+}) %}
+<div {{ attrs_c }}>D</div>
+
+{# === FAIL × 1: |json_encode(<flag-without-JSON_HEX_QUOT>)|raw in attribute === #}
+<div data-config="{{ payload|json_encode(constant('JSON_HEX_TAG'))|raw }}">E</div>
+
+{# === FAIL × 1: |json_encode wrapped in non-html_attr escape === #}
+<div data-config="{{ payload|json_encode|e('html') }}">F</div>
+
+{# === FAIL × 1: string literal 'JSON_HEX_QUOT' passed as flag — coerces to 0 at runtime, no flags applied === #}
+<div data-config="{{ payload|json_encode('JSON_HEX_QUOT')|raw }}">Q</div>
+
+{# === OK: vue.md canonical — |json_encode|e('html_attr') === #}
+<div data-config="{{ payload|json_encode|e('html_attr') }}">G</div>
+
+{# === OK: long-form escape — |json_encode|escape('html_attr') === #}
+<div data-config="{{ payload|json_encode|escape('html_attr') }}">H</div>
+
+{# === OK: create-attribute.md canonical — full JSON_HEX_* flag set + |raw === #}
+{% set attrs_i = create_attribute({
+	'data-items': content.items|json_encode(constant('JSON_HEX_TAG') b-or constant('JSON_HEX_APOS') b-or constant('JSON_HEX_AMP') b-or constant('JSON_HEX_QUOT'))|raw,
+}) %}
+<div {{ attrs_i }}>I</div>
+
+{# === OK: minimal flag — JSON_HEX_QUOT only === #}
+{% set attrs_j = create_attribute({
+	'data-items': content.items|json_encode(constant('JSON_HEX_QUOT'))|raw,
+}) %}
+<div {{ attrs_j }}>J</div>
+
+{# === OK: JSON_HEX_QUOT in any position of b-or chain === #}
+{% set attrs_k = create_attribute({
+	'data-items': content.items|json_encode(constant('JSON_HEX_TAG') b-or constant('JSON_HEX_QUOT'))|raw,
+}) %}
+<div {{ attrs_k }}>K</div>
+
+{# === OK: {% set %} for non-attribute purposes — context skip (not in PrintNode, not in ArrayExpression value) === #}
+{% set debug_blob = obj|json_encode %}
+<pre>L: {{ debug_blob|length }}</pre>
+
+{# Known limitation: |json_encode in any PrintNode (e.g. JSON-LD <script>) WILL fire — #}
+{# the rule cannot distinguish "print inside HTML attribute" from "print as <script> body". #}
+{# Such non-attribute prints are silenced per Layer A with reason. #}

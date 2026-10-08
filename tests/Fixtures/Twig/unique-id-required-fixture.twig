@@ -1,0 +1,28 @@
+{# Fixture for UniqueIdRequiredRule. File-level rule — each scenario is its OWN file.
+   The fixture below tests the FAIL case; OK scenarios live in
+   `unique-id-required-fixture-ok-*.twig` (one per pattern). #}
+{# Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/unique-id-required-fixture.twig #}
+
+{# === FAIL: loop.index in id without uniqueId() === #}
+{# Real-world example shape — mirrors product-slider.twig, zig-zag.twig, branch-list.twig
+   patterns that the 2026-05 audit found. #}
+
+<section class="component-product-slider">
+	{% for slide in content.slides %}
+		{% set slider_id = 'product-slider-' ~ loop.index %}
+
+		<div id="{{ slider_id }}" aria-controls="thumbs-{{ loop.index }}" class="swiper">
+			{% for item in slide.items %}
+				<article class="swiper-slide">
+					<label for="slide-toggle-{{ loop.index }}">{{ item.title }}</label>
+					<input type="checkbox" name="active-slide-{{ loop.index }}" id="slide-toggle-{{ loop.index }}">
+				</article>
+			{% endfor %}
+		</div>
+
+		<nav aria-labelledby="{{ slider_id }}-label">
+			<button aria-controls="{{ slider_id }}">prev</button>
+			<button aria-controls="{{ slider_id }}">next</button>
+		</nav>
+	{% endfor %}
+</section>

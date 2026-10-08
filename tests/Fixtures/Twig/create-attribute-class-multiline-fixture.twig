@@ -1,0 +1,59 @@
+{# Fixture for CreateAttributeClassMultilineRule. Each block describes the expected behavior. #}
+{# Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/create-attribute-class-multiline-fixture.twig #}
+{# Expected: 3 warnings, 0 errors (CreateAttributeClassMultiline) — the three FAIL cases below #}
+
+{# === FAIL: 2-entry array packed onto a single line === #}
+{% set attrs = create_attribute({
+	class: ['w-full', 'relative'],
+}) %}
+
+{# === FAIL: 3-entry array with a ternary, all on a single line === #}
+{% set attrs = create_attribute({
+	class: ['w-full', content.usage == 'page' ? 'aspect-[2/1]' : 'aspect-[804/512]', 'relative'],
+}) %}
+
+{# === FAIL: otherwise-multiline array where two entries still share one line === #}
+{% set attrs = create_attribute({
+	class: [
+		'flex items-center', 'gap-4',
+		'mt-8',
+	],
+}) %}
+
+{# === OK: single-entry array stays on one line (not this rule's concern) === #}
+{# A compound (ternary) single entry keeps CreateAttributeClassArrayRule quiet too. #}
+{% set attrs = create_attribute({
+	class: [is_active ? 'is-active' : ''],
+}) %}
+
+{# === OK: multi-entry array, properly one entry per line === #}
+{% set attrs = create_attribute({
+	class: [
+		'w-full',
+		'relative',
+	],
+}) %}
+
+{# === OK: multi-entry array with a ternary entry, one entry per line === #}
+{% set attrs = create_attribute({
+	class: [
+		'w-full',
+		content.usage == 'page' ? 'aspect-[2/1]' : 'aspect-[804/512]',
+		'relative',
+	],
+}) %}
+
+{# === OK: bare string class (no array at all) === #}
+{% set attrs = create_attribute({
+	class: 'btn btn-primary',
+}) %}
+
+{# === OK: empty array (no entries to spread across lines) === #}
+{% set attrs = create_attribute({
+	class: [],
+}) %}
+
+{# === OK: no class slot at all === #}
+{% set attrs = create_attribute({
+	id: 'foo',
+}) %}

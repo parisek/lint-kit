@@ -1,0 +1,68 @@
+{# Fixture for ArbitraryPxRule. Each comment block describes the expected behavior. #}
+{# Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/arbitrary-px-fixture.twig #}
+
+{# === FAIL: min-h with px === #}
+<div class="min-h-[600px]">x</div>
+
+{# === FAIL: per-axis (mt, pt, pb, pl, pr) with variant === #}
+<div class="lg:pt-[180px] mt-[3px] pb-[8px]">x</div>
+
+{# === FAIL: w + h on one line — dedupes to ONE warning === #}
+<div class="w-[72px] h-[45px]">x</div>
+
+{# === FAIL: size shorthand === #}
+<div class="size-[121px]">x</div>
+
+{# === FAIL: gap === #}
+<div class="gap-[10px] gap-x-[16px] gap-y-[8px]">x</div>
+
+{# === FAIL: max-w with breakpoint variants === #}
+<div class="max-w-[1155px] xl:max-w-[1280px]">x</div>
+
+{# === FAIL: negative spacing === #}
+<div class="mt-[-3px] left-[-12px]">x</div>
+
+{# === FAIL: fractional pixel === #}
+<div class="mt-[0.5px]">x</div>
+
+{# === FAIL: inside Twig classes array (STRING_TYPE) === #}
+{% set attrs = create_attribute({
+	class: [
+		'flex flex-col',
+		'min-h-[600px]',
+		'lg:max-w-[1280px]',
+	],
+}) %}
+
+{# === OK: rem-based utility scale (the correct fix) === #}
+<div class="min-h-150 pt-45 w-18 h-11 size-30">x</div>
+<div class="gap-2.5 gap-x-4 gap-y-2">x</div>
+<div class="max-w-289 xl:max-w-320">x</div>
+<div class="mt-0.75 left-3">x</div>
+
+{# === OK: calc() — sub-pixel control intentional === #}
+<div class="min-h-[calc(100vh-80px)]">x</div>
+<div class="w-[calc(100%-2rem)]">x</div>
+
+{# === OK: var() — design-system indirection === #}
+<div class="min-h-[var(--brand-mega)]">x</div>
+<div class="max-w-[var(--container-prose)]">x</div>
+
+{# === OK: rem / em / % units (out of scope) === #}
+<div class="min-h-[37.5rem] max-w-[80em] w-[50%]">x</div>
+
+{# === OK: border / outline / ring / text / leading — explicitly excluded === #}
+<div class="border-[1px] outline-[2px] ring-[3px]">x</div>
+<div class="text-[14px] leading-[20px] tracking-[1px]">x</div>
+<div class="indent-[1px] divide-[1px]">x</div>
+
+{# === OK: lookalike utility names with prefix === #}
+<div class="my-min-h-[1px]">no — leading `my-` makes prefix alpha</div>
+<div class="prefix-pt-[1px]">no — same compound-identifier guard</div>
+
+{# === OK: variant prefix STILL triggers — and that's intentional === #}
+{# but lookalike inside an alt path doesn't === #}
+<div class="hover-pt-[1px]">no — `hover-pt` is not Tailwind `hover:pt`</div>
+
+{# === OK: arbitrary-px appearing in a Twig comment is sacred === #}
+{# We could use min-h-[600px] here but it's just a comment. #}

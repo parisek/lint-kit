@@ -1,0 +1,98 @@
+{# === PictureImagePropRule fixture ======================================
+Verifies detection of `component_picture({…})` keys that the component
+only ever reads from INSIDE its `image:` entries.
+
+`picture.twig` reads `alt`, `src`, `width`, `height`, `title`, `type` and
+`media` as `image.<key>` — per entry. Everything else it reads from the
+top level (`content.image_classes`, `content.loading`, `content.wrapper_*`).
+The two sets do not overlap, so an entry-only key at the top level is
+always wrong, and wrong in silence: the value is never read.
+
+Skip conditions:
+- keys the component genuinely reads at the top level — skipped
+- a dynamic `image:` value (variable, pipe chain) — irrelevant, the rule
+	never looks inside `image:`
+- calls to other components, even when they take an `alt` of their own
+- a hash passed as a pre-built variable — nothing to inspect statically
+
+Run from repo root:
+
+vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/picture-image-prop-fixture.twig
+
+Expected: 5 warnings, 0 errors (PictureImageProp) — sections 1, 2, 3 (two keys), 9
+====================================================================== #}
+
+{# 1) FAIL: alt as a sibling of image: — the header-logo bug (#400).
+	Renders alt="" and, inside a link, leaves the link with no
+	accessible name. #}
+{{ component_picture({
+	image: [
+		{ src: templateUrl ~ '/images/logo.svg', type: 'image/svg+xml' },
+	],
+	alt: 'Company logo',
+	image_classes: 'w-40 h-auto',
+}) }}
+
+{# 2) FAIL: title, the same shape — equally easy to type, equally silent #}
+{{ component_picture({
+	image: [
+		{ src: templateUrl ~ '/images/photo.avif', type: 'image/avif' },
+	],
+	title: 'Photo caption',
+}) }}
+
+{# 3) FAIL: two entry-only keys in one call — one warning each #}
+{{ component_picture({
+	image: [
+		{ src: templateUrl ~ '/images/photo.avif', type: 'image/avif' },
+	],
+	width: '800',
+	height: '600',
+}) }}
+
+{# 4) OK: the correct form — alt lives inside the entry #}
+{{ component_picture({
+	image: [
+		{ src: templateUrl ~ '/images/photo.avif', type: 'image/avif', alt: 'A red car on a sunny street' },
+	],
+	image_classes: 'w-full h-auto',
+}) }}
+
+{# 5) OK: image: as a pipe chain, alt correctly nested by the resizer output.
+	The rule must not need to see inside image: — this is what almost every
+	real call site looks like. #}
+{{ component_picture({
+	image: content.image|resizer(['1200', '', '1920'], ['800', '', '1024']),
+	image_classes: 'w-full h-full object-cover',
+}) }}
+
+{# 6) OK: only top-level keys the component actually reads #}
+{{ component_picture({
+	image: content.image|resizer(['600', '400', '']),
+	image_classes: 'rounded-2xl',
+	loading: 'eager',
+	fetchpriority: 'high',
+	decoding: 'sync',
+	link: '/detail',
+	link_lightbox: true,
+	wrapper_classes: 'my-8',
+	wrapper_id: 'hero-picture',
+}) }}
+
+{# 7) OK: a different component that takes its own top-level alt and nests
+	it internally — the rule matches component_picture calls only #}
+{{ component_avatar({
+	image: content.image,
+	alt: 'Portrait of the author',
+}) }}
+
+{# 8) OK: pre-built hash passed as a variable — nothing to inspect #}
+{% set picture_args = { image: content.image, alt: 'unreachable statically' } %}
+{{ component_picture(picture_args) }}
+
+{# 9) FAIL: src at the top level — the same silent drop, less common but
+	identical in kind #}
+{{ component_picture({
+	image: [],
+	src: templateUrl ~ '/images/photo.avif',
+}) }}

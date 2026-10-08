@@ -1,0 +1,53 @@
+{# Fixture for InlineConditionalClassRule. Each block describes the expected behavior. #}
+{# Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/inline-conditional-class-fixture.twig #}
+{# Scoping: rule is anchored on `class="…"` / `class='…'` openers in raw HTML. Ternaries elsewhere (data-*, {% if %}, create_attribute payloads) are out of scope. #}
+{# Expected: 7 warnings, 0 errors (InlineConditionalClass) — 6 lines fire; the two-ternaries line fires twice #}
+
+{# === FAIL × 1: ternary alone in class attribute === #}
+<div class="{{ x ? 'a' : 'b' }}">A</div>
+
+{# === FAIL × 1: static base + inline ternary === #}
+<div class="static {{ x ? 'a' : '' }}">B</div>
+
+{# === FAIL × 1: ternary + trailing static === #}
+<div class="{{ x ? 'a' : '' }} static-after">C</div>
+
+{# === FAIL × 1: nested attribute access inside ternary === #}
+<div class="{{ deep.nested ? 'a' : 'b' }}">D</div>
+
+{# === FAIL × 2: two inline ternaries in one class attribute === #}
+<div class="{{ x ? 'a' : '' }} {{ y ? 'c' : '' }}">E</div>
+
+{# === FAIL × 1: ternary on a different element (button) === #}
+<button type="button" class="{{ active ? 'is-active' : '' }}">F</button>
+
+{# === OK: bare variable, no ternary === #}
+<div class="{{ var }}">G</div>
+
+{# === OK: null-coalescing — different operator, doctrine-acceptable === #}
+<div class="{{ var ?? 'default' }}">H</div>
+
+{# === OK: pure literal, no Twig === #}
+<div class="static-class">I</div>
+
+{# === OK: static + bare variable, no ternary === #}
+<div class="static {{ var }}">J</div>
+
+{# === OK: create_attribute payload — class= anchor doesn't match #}
+{% set attributes = create_attribute({ class: ['one', 'two'] }) %}
+<div {{ attributes }}>K</div>
+
+{# === OK: ternary in non-class attribute — out of scope === #}
+<div data-foo="{{ x ? 'a' : 'b' }}">L</div>
+
+{# === OK: ternary outside any attribute === #}
+{% if x ? 'a' : 'b' %}<span>M</span>{% endif %}
+
+{# === OK: ternary inside create_attribute({ class: [...] }) — correct doctrine === #}
+{% set body_attributes = create_attribute({
+	class: [
+		'prose max-w-none',
+		content.dark_background ? 'prose-invert' : '',
+	],
+}) %}
+<div {{ body_attributes }}>N</div>

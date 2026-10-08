@@ -1,0 +1,83 @@
+{# Fixture for HardcodedI18nArrayKeyRule (AST-based, create_attribute hash literals). #}
+{# Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/hardcoded-i18n-array-key-fixture.twig #}
+{# Expected: 7 warnings, 0 errors (HardcodedI18nArrayKey) — 5 plain + 1 inside a merge-filter chain + 1 same-line literal; a normal lint run also shows 1 unrelated EmptyAlt warning on the decorative OK case, for 8 in total #}
+
+{# === FAIL: 'aria-label' key with Czech string literal in create_attribute === #}
+{% set fail_aria_cs = create_attribute({
+	type: 'button',
+	'aria-label': 'Předchozí',
+}) %}
+
+{# === FAIL: 'aria-label' key with English string literal === #}
+{% set fail_aria_en = create_attribute({
+	type: 'button',
+	'aria-label': 'Submit',
+}) %}
+
+{# === FAIL: title key with Czech literal === #}
+{% set fail_title = create_attribute({
+	type: 'button',
+	title: 'Otevřít',
+}) %}
+
+{# === FAIL: placeholder key with Czech literal === #}
+{% set fail_placeholder = create_attribute({
+	type: 'text',
+	placeholder: 'Vaše jméno',
+}) %}
+
+{# === FAIL: alt key with non-empty literal (decorative '' goes through EmptyAltRule) === #}
+{% set fail_alt = create_attribute({
+	alt: 'Company logo',
+}) %}
+
+{# === FAIL: merge filter chain — `create_attribute({ … }|merge(…))` still scanned via one-filter unwrap. === #}
+{% set fail_merge = create_attribute({
+	type: 'button',
+	'aria-label': 'Filtered Czech',
+}|merge({ class: 'extra' })) %}
+
+{# === OK: 'aria-label' key with _x() function call === #}
+{% set ok_xfn = create_attribute({
+	type: 'button',
+	'aria-label': _x('Previous', 'tailwind-base', 'tailwind-base'),
+}) %}
+
+{# === OK: 'aria-label' key with variable === #}
+{% set ok_var = create_attribute({
+	type: 'button',
+	'aria-label': content.label,
+}) %}
+
+{# === OK: 'aria-label' key with concatenation === #}
+{% set ok_concat = create_attribute({
+	type: 'button',
+	'aria-label': _x('Slide', 'tailwind-base', 'tailwind-base') ~ ' ' ~ loop.index,
+}) %}
+
+{# === OK: alt key with empty literal — EmptyAltRule's territory, this rule stays silent === #}
+{% set ok_decorative = create_attribute({
+	alt: '',
+}) %}
+
+{# === OK: title key with pure-symbol literal === #}
+{% set ok_symbol = create_attribute({
+	title: '$50',
+}) %}
+
+{# === OK: unrelated key === #}
+{% set ok_unrelated = create_attribute({
+	class: 'foo bar',
+	'data-id': 'some-id',
+}) %}
+
+{# === OK: plain data hash outside create_attribute() — never inspected, regardless of keys === #}
+{% set ok_data = {
+	type: 'product',
+	title: 'Some product title (NOT a flagged attribute — data hash)',
+	alt: 'Product alt text in data',
+} %}
+
+{# === FAIL: hash literal on same line as create_attribute() call — warning attached to value node hits line 83 #}
+{# (kept as a FAIL case to document that the warning location is precise per-doctrine; for a real silencing example see the README or the twig-cs-fixer.md §3 Layer A.) #}
+{% set still_flagged = create_attribute({ 'aria-label': 'Manually approved literal' }) %}

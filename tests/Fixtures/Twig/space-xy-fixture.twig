@@ -1,0 +1,44 @@
+{# Fixture for SpaceXYRule. Each comment block describes the expected behavior. #}
+{# Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/space-xy-fixture.twig #}
+
+{# === FAIL: bare space-y in raw HTML class attribute === #}
+<div class="space-y-4">item</div>
+
+{# === FAIL: bare space-x in raw HTML class attribute === #}
+<ul class="space-x-2">item</ul>
+
+{# === FAIL: variant-prefixed (hover:, lg:, dark:) === #}
+<nav class="hover:space-x-4 lg:space-y-8 dark:space-y-2">menu</nav>
+
+{# === FAIL: arbitrary value form === #}
+<div class="space-y-[10px]">arbitrary</div>
+
+{# === FAIL: fractional / px scale forms === #}
+<div class="space-y-0.5">half-step</div>
+<div class="space-x-px">one px</div>
+
+{# === FAIL: inside Twig string array (STRING_TYPE) === #}
+{% set attrs = create_attribute({
+	class: [
+		'flex flex-col',
+		'space-y-4',
+	],
+}) %}
+
+{# === FAIL: per-line dedupe — multiple space- on one line fires ONCE === #}
+<div class="space-x-2 space-y-4">two on one line</div>
+
+{# === OK: gap-* on flex parent (the recommended replacement) === #}
+<div class="flex gap-4">items</div>
+<div class="grid gap-2">items</div>
+
+{# === OK: lookalike substrings in unrelated identifiers must NOT trigger === #}
+<div class="my-space-y-helper">no — leading char is a letter</div>
+<div class="namespace-x-foo">no — `namespace` is not `space`</div>
+<div class="aerospace-x-1">no — `aerospace` ends in `space` but leading char is alpha</div>
+
+{# === OK: space-y appearing in a Twig comment is sacred === #}
+{# We could use space-y-4 here but it's just a comment. #}
+
+{# === OK: space-y as a plain word inside text, not a class === #}
+<p>The phrase "space-y" is fine in copy.</p>

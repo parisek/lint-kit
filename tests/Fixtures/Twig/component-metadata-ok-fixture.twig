@@ -1,0 +1,72 @@
+{#
+name: "Metadata OK"
+description: ""
+category: "Test"
+asana: "https://app.asana.com/0/1234567890/9876543210"
+drupal: "/admin/structure/paragraphs_type/metadata-ok"
+web: "https://www.example.com/components/metadata-ok"
+	name:
+	category:
+#}
+{#
+	This block is deliberately NOT part of the metadata comment above (#452).
+
+	The manifest fingerprint drops a leading comment that carries a `name:`
+	line, because `usage:` and `category:` are per-project and regenerated
+	downstream (#227). A fixture's Run: and Expected: lines are the opposite —
+	skeleton-owned, and the only thing carrying the fixture's claim to truth.
+	Kept inside that block, an upstream rewrite is invisible to drift
+	detection: downstream keeps the old wording, verify reports OK, and
+	fixtures.spec.js then fails on a fixture it cannot parse.
+	Measured on eprukaz, 2026-07-30.
+#}
+{#
+ComponentMetadataRule fixture — OK case.
+
+Component template with a well-formed metadata block. Tests that:
+- name is present and non-empty (required for all templates).
+- category is present and non-empty (required for component templates).
+- description is present but empty — allowed (description is optional, value may be "").
+- All three optional URL/path keys are valid (asana on asana.com domain,
+drupal as a site-relative path starting with '/', web as an absolute https URL).
+
+Note: description is OPTIONAL — omitting it entirely is also valid and must NOT trigger
+a warning. See component-metadata-fail-fixture.twig which omits description to verify no
+spurious warning fires.
+
+Page templates (those under templates/page/) are exempt from the category requirement.
+The page-template exemption is exercised by the real page templates under
+static/templates/page/ (e.g. article-full.twig, page-full.twig) which omit category
+without triggering a warning. See component-metadata-page-ok-fixture.twig for the
+documented example.
+
+Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/component-metadata-ok-fixture.twig
+Expected: 0 warnings, 0 errors (ComponentMetadata)
+
+The `fields:` block below carries a NESTED key named `category` (and `name`)
+documenting the component's data shape. These must NOT shadow the top-level
+`category: "Test"` / `name:` metadata — the parser only reads column-0 keys.
+Regression guard for the nested-key shadowing bug.
+
+fields:
+		title: Name
+		type: text
+		title: Category
+		type: group
+		fields:
+			title:
+				title: Category title
+				type: text
+#}
+{% extends '@component/component/component.twig' %}
+{% set component = {
+	name: 'metadata-ok',
+	id: content.wrapper_id,
+	classes: [
+		'my-16',
+		content.wrapper_classes,
+	],
+} %}
+{% block content %}
+	<p>Well-formed metadata above.</p>
+{% endblock %}

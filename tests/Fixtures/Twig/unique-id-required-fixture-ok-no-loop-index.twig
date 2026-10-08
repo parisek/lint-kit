@@ -1,0 +1,14 @@
+{# Fixture for UniqueIdRequiredRule. OK case — DOM ids present but no loop.index (e.g., a single instance using uniqueId() or just a static template). #}
+
+<section class="component-modal">
+	{% set modal_id = uniqueId() %}
+	<button type="button" aria-controls="{{ modal_id }}" aria-expanded="false">Open</button>
+	<dialog id="{{ modal_id }}" aria-labelledby="{{ modal_id }}-title">
+		<h2 id="{{ modal_id }}-title">{{ content.title }}</h2>
+		<form method="dialog">
+			<label for="{{ modal_id }}-input">Name</label>
+			<input id="{{ modal_id }}-input" name="user-name" type="text">
+			<button type="submit" value="confirm">Confirm</button>
+		</form>
+	</dialog>
+</section>

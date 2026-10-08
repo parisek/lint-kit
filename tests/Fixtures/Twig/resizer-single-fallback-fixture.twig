@@ -1,0 +1,132 @@
+{# === ResizerSingleFallbackRule fixture ==============================
+Verifies detection of `|resizer(...)` calls passing more than one
+FALLBACK tuple (empty or absent `maxWidth`, the third slot). Each
+section labelled "OK" must stay silent; each "FAIL" must trigger one
+warning.
+
+Run from repo root:
+
+vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/resizer-single-fallback-fixture.twig
+
+Expected: 8 warnings, 0 errors (ResizerSingleFallback) — sections 6, 7, 8, 9, 11, 12, 13, 14
+==================================================================== #}
+
+{# --- 1. OK: one fallback, two conditional breakpoints --- #}
+{{ component_picture({
+	image: content.image|resizer(
+		['1440', '720', '1024', 'crop'],
+		['1024', '900', '768', 'crop'],
+		['1280', '1600', '', 'crop'],
+	),
+}) }}
+
+{# --- 2. OK: a single tuple that IS the fallback --- #}
+{{ component_picture({ image: content.image|resizer(['868', '1080', '', 'crop']) }) }}
+
+{# --- 3. OK: merge_resizer — each call carries at most one fallback.
+	The desktop argument's own fallback is required so the mobile-absent
+	case still has one; the merge filters non-last fallbacks itself. --- #}
+{{ component_picture({
+	image: merge_resizer(
+		content.image|resizer(
+			['1920', '1080', '1920'],
+			['1280', '900', '1024'],
+			['1500', '2000', '', 'crop'],
+		),
+		content.image_mobile|resizer(['1500', '2000', '', 'crop']),
+	),
+}) }}
+
+{# --- 4. OK: non-constant maxWidth is not statically knowable --- #}
+{{ component_picture({
+	image: content.image|resizer(
+		['1440', '720', breakpoint_lg, 'crop'],
+		['1024', '900', breakpoint_md, 'crop'],
+		['768', '960', '', 'crop'],
+	),
+}) }}
+
+{# --- 5. OK: tuples passed as a variable cannot be evaluated --- #}
+{{ component_picture({ image: content.image|resizer(desktop_tuple, mobile_tuple) }) }}
+
+{# --- 6. FAIL: three tuples, all missing maxWidth (the shipped bug) --- #}
+{{ component_picture({
+	image: content.image|resizer(
+		['1440', '720', '', 'crop'],
+		['1024', '900', '', 'crop'],
+		['768', '960', '', 'crop'],
+	),
+}) }}
+
+{# --- 7. FAIL: two fallbacks alongside a real breakpoint --- #}
+{{ component_picture({
+	image: content.image|resizer(
+		['1200', '628', '1024', 'crop'],
+		['800', '450', '', 'crop'],
+		['400', '225', '', 'crop'],
+	),
+}) }}
+
+{# --- 8. FAIL: maxWidth omitted entirely — a two-slot tuple is a fallback --- #}
+{{ component_picture({
+	image: content.image|resizer(
+		['1200', '628'],
+		['600', '314'],
+	),
+}) }}
+
+{# --- 9. FAIL: numeric zero counts as empty, same as '' --- #}
+{{ component_picture({
+	image: content.image|resizer(
+		['1200', '628', 0, 'crop'],
+		['600', '314', '', 'crop'],
+	),
+}) }}
+
+{# --- 10. OK: a spread inside a tuple hides its real slot count, so the tuple
+	is unanalysable and must NOT be reported. Both of these are complete
+	four-slot conditionals. --- #}
+{{ component_picture({
+	image: content.image|resizer(
+		['1200', ...['628', '1024', 'crop']],
+		['600', ...['314', '768', 'crop']],
+	),
+}) }}
+
+{# --- 11. FAIL: hash tuples with REORDERED keys — slot 2 is genuinely absent
+	on both. Walking children positionally would read 'crop' as the maxWidth
+	and miss it. --- #}
+{{ component_picture({
+	image: content.image|resizer(
+		{0: '1200', 1: '628', 3: 'crop'},
+		{0: '600', 1: '314', 3: 'crop'},
+	),
+}) }}
+
+{# --- 12. FAIL: string '0' is runtime-empty — the runtime tests
+	`!empty($variant[2])`, so this is two fallbacks, not two breakpoints. --- #}
+{{ component_picture({
+	image: content.image|resizer(
+		['1200', '628', '0'],
+		['600', '314', '0'],
+	),
+}) }}
+
+{# --- 13. FAIL: numeric-STRING keys. PHP normalises those to integers, so the
+	runtime reads these as slots 0 and 1 with no slot 2 — two fallbacks. --- #}
+{{ component_picture({
+	image: content.image|resizer(
+		{'0': '1200', '1': '628'},
+		{'0': '600', '1': '314'},
+	),
+}) }}
+
+{# --- 14. FAIL: '02' is NOT coerced by PHP, so it stays a string key and slot 2
+	is absent on both tuples — two fallbacks. A looser numeric-string test would
+	map '02' onto slot 2 and miss this. --- #}
+{{ component_picture({
+	image: content.image|resizer(
+		{'02': '768', 0: '1200', 1: '628'},
+		{'02': '512', 0: '600', 1: '314'},
+	),
+}) }}

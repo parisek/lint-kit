@@ -1,0 +1,29 @@
+{# === WrapperClassesRule fixture — OK case ==============================
+Component template that extends `@component/component/component.twig` AND
+exposes `content.wrapper_classes` in its `classes:` array — the canonical
+shape every component should follow.
+
+Pairs with `wrapper-classes-fail-fixture.twig`. Sister negative cases
+(template that doesn't extend anything, template that extends a different
+parent) stay silent automatically — the rule's first guard short-circuits
+on Modules whose `parent` isn't `@component/component/component.twig`.
+
+Run from repo root:
+
+vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/wrapper-classes-ok-fixture.twig
+
+Expected: 0 warnings, 0 errors (WrapperClasses)
+====================================================================== #}
+{% extends '@component/component/component.twig' %}
+{% set component = {
+	name: 'wrapper-classes-ok',
+	id: content.wrapper_id,
+	classes: [
+		'my-16 xl:my-20 2xl:my-32',
+		content.wrapper_classes,
+	],
+	container: 'container',
+} %}
+{% block content %}
+	<p>This component lets the parent CMS append wrapper classes.</p>
+{% endblock %}

@@ -1,0 +1,22 @@
+{#
+	Wrapper customization: this comment is deliberately NOT YAML.
+
+	It carries the `key: value`-looking prose ADR 0007 leaves behind once a
+	component's metadata moves into `<id>.yaml` — `{ padding-top: 0 }` and a
+	stray "quoted" phrase, both of which throw in Yaml::parse().
+#}
+{# ^ MetadataYamlParsesRule fixture — EXEMPT case (sibling <id>.yaml definition).
+
+Main-template shape (<dir>/<dir>.twig), so the shape gate does NOT exempt it, and
+the first comment is invalid YAML, so the parse gate would fire. It stays silent
+only because metadata-yaml-parses-defined.yaml sits beside it: ComponentParser::
+readComponentMetadata() prefers that file and never parses this comment, so the
+failure mode this rule reports — dropped from the catalogue — cannot happen.
+
+Delete the sibling .yaml and this fixture must fire again; that is the regression
+this case pins.
+
+Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/metadata-yaml-parses-defined/
+Expected: 0 warnings, 0 errors (MetadataYamlParses)
+#}
+<div class="metadata-yaml-defined"></div>

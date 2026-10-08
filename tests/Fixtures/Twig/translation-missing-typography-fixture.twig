@@ -1,0 +1,74 @@
+{# Fixture for TranslationMissingTypographyRule (token-based, HTML-context-aware). #}
+{# Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/translation-missing-typography-fixture.twig #}
+{# Expected: 3 warnings, 0 errors (TranslationMissingTypography) — one per FAIL case #}
+{# Note: the two plural OK cases carry no printf placeholder — with one they would ALSO trip TranslationPluralMissingFormat (§ 7.6) and this file would stop reporting a single rule. The placeholder was incidental to the sr-only context they test. #}
+{# Note: every OK case is also kept clean against the OTHER registered rules (button type=, theme-name domain) so the run emits exactly 3 — only this rule's warnings. If a future rule fires on an OK line, fix the case, don't relax this rule. #}
+
+{# === FAIL 1: visible label in a plain <span> — issue #380's third quoted example === #}
+<span class="btn-animate-chars__text">{{ _x('Visit the website', 'tailwind-base', 'tailwind-base') }}</span>
+
+{# === FAIL 2: visible heading text node === #}
+<h2>{{ _x('Fresh from the blog', 'tailwind-base', 'tailwind-base') }}</h2>
+
+{# === FAIL 3: visible paragraph text node === #}
+<p>{{ _x('We send updates once a month.', 'tailwind-base', 'tailwind-base') }}</p>
+
+{# === OK 4: sr-only — issue #380's first quoted example, must NOT fire === #}
+<span class="sr-only">{{ _x('Close', 'tailwind-base', 'tailwind-base') }}</span>
+
+{# === OK 5: sr-only combined with a responsive not-sr-only variant — issue #380's second quoted example. Silence beats a false positive here even though the string is visible from md: up === #}
+<span class="sr-only md:not-sr-only md:inline-block">{{ _x('Older articles', 'tailwind-base', 'tailwind-base') }}</span>
+
+{# === OK 6: aria-label attribute — technical/a11y string, not a text node === #}
+<button type="button" aria-label="{{ _x('Close', 'tailwind-base', 'tailwind-base') }}"></button>
+
+{# twig-cs-fixer-disable PlainImg — fixture intentionally uses a raw <img> tag to exercise alt-attribute coverage; production templates use component_picture per picture.md. #}
+{# === OK 7: alt attribute === #}
+<img src="/x.jpg" alt="{{ _x('Company logo', 'tailwind-base', 'tailwind-base') }}">
+{# twig-cs-fixer-enable PlainImg #}
+
+{# === OK 8: title attribute, preceded by another interpolated attribute in the same still-open tag — the harder attribute-context case (no literal `<` in the immediately-preceding text chunk) === #}
+<div class="{{ wrapper_class }}" title="{{ _x('Hover hint', 'tailwind-base', 'tailwind-base') }}">Content</div>
+
+{# === OK 9: placeholder attribute === #}
+<input type="text" placeholder="{{ _x('Your name', 'tailwind-base', 'tailwind-base') }}">
+
+{# === OK 10: already correct — _xt() already applied, this rule only watches bare _x/__/_n/_nx === #}
+<span>{{ _xt('Newer articles', 'tailwind-base', 'tailwind-base') }}</span>
+
+{# === OK 11: _x(...)|typography — TranslationTypographyFilterRule's territory, this rule must not double-report it (a filter is present, so it's not "missing" typography) === #}
+<span>{{ _x('Read more', 'tailwind-base', 'tailwind-base')|typography }}</span>
+
+{# === OK 12: inside <title> === #}
+<title>{{ _x('Page title', 'tailwind-base', 'tailwind-base') }}</title>
+
+{# === OK 13: inside <option> === #}
+<select>
+	<option>{{ _x('Choose a country', 'tailwind-base', 'tailwind-base') }}</option>
+</select>
+
+{# === OK 14: inside <script> — a JS string literal built from a translation, still not an HTML text node === #}
+<script>
+	var label = "{{ _x('Loading…', 'tailwind-base', 'tailwind-base') }}";
+</script>
+
+{# === OK 15: inside <style> === #}
+<style>
+	/* {{ _x('Generated stylesheet', 'tailwind-base', 'tailwind-base') }} */
+</style>
+
+{# === OK 16: value passed into a component_*() call — naturally out of scope, the print's root expression is the component_*() call, not the bare translation function === #}
+{{ component_button({ title: _x('Go to homepage', 'tailwind-base', 'tailwind-base'), url: '/pricing' }) }}
+
+{# === OK 17: value passed into a macro call — same reasoning as 16 === #}
+{% import _self as macros %}
+{{ macros.label(_x('Sample label', 'tailwind-base', 'tailwind-base')) }}
+{% macro label(text) %}<span>{{ text }}</span>{% endmacro %}
+
+{# === OK 18: _x() as an operand of a binary expression, not the whole print — out of scope by design (only a bare whole-print call is a "missing helper" candidate) === #}
+<span>{{ _x('Prefix', 'tailwind-base', 'tailwind-base') ~ ' suffix' }}</span>
+
+{# === OK 19: __/  _n / _nx bare-call variants inside sr-only, confirming the skip list covers every function name, not just _x === #}
+<span class="sr-only">{{ __('Close', 'tailwind-base') }}</span>
+<span class="sr-only">{{ _n('one item', 'many items', 3, 'tailwind-base') }}</span>
+<span class="sr-only">{{ _nx('one item', 'many items', 3, 'tailwind-base', 'tailwind-base') }}</span>

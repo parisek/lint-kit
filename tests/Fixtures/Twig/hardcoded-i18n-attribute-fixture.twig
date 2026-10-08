@@ -1,0 +1,68 @@
+{# Fixture for HardcodedI18nAttributeRule (token-based, raw HTML attributes). #}
+{# Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/hardcoded-i18n-attribute-fixture.twig #}
+{# Expected: 13 warnings, 0 errors (HardcodedI18nAttribute) — The fixture also intentionally uses raw <img> markup for alt-attribute coverage; PlainImgRule is silenced for those rows via the explicit disable/enable pair around lines 23 and 58. Without that pair the same lines would also fire PlainImgRule and inflate the count. Don't paste the directive text into this header — twig-cs-fixer would honour it from line 3 and silently mask any raw <img> added above the explicit block #}
+
+{# === FAIL: aria-label hardcoded Czech === #}
+<button type="button" aria-label="Předchozí">Prev</button>
+
+{# === FAIL: aria-label hardcoded English === #}
+<button type="button" aria-label="Submit">Submit</button>
+
+{# === FAIL: title hardcoded Czech === #}
+<button type="button" title="Otevřít">Open</button>
+
+{# === FAIL: title hardcoded English === #}
+<button type="button" title="Click me">X</button>
+
+{# === FAIL: placeholder hardcoded Czech === #}
+<input type="text" placeholder="Vaše jméno">
+
+{# === FAIL: placeholder hardcoded English === #}
+<input type="email" placeholder="Your email">
+
+{# twig-cs-fixer-disable PlainImg — fixture intentionally uses raw <img> tags to exercise alt-attribute coverage; production templates use component_picture per picture.md. #}
+{# === FAIL: alt hardcoded Czech === #}
+<img src="/x.jpg" alt="Logo společnosti">
+
+{# === FAIL: alt hardcoded English === #}
+<img src="/x.jpg" alt="Company logo">
+
+{# === FAIL: ASCII-only Czech (no accent chars but still hardcoded) === #}
+<button type="button" aria-label="Foto">Foto</button>
+
+{# === FAIL: brand identifier — per styleguide.md, brand strings still go through _x() === #}
+<img src="/logo.svg" alt="ACME-S">
+
+{# === FAIL: single-quoted value === #}
+<button type="button" aria-label='Zavřít'>X</button>
+
+{# === FAIL: multi-attribute element — both title and aria-label fire (2 warnings) === #}
+<button type="button" title="Otevřít" aria-label="Otevřít dialog" class="btn">{% if open %}Otevřeno{% endif %}</button>
+
+{# === OK: framework-binding prefixes — boundary lookbehind `(?<![-:\w])` rejects `data-title=`, `:placeholder=`, `x-bind:alt=`. === #}
+<button type="button" data-title="ignored" :placeholder="someJsExpr" x-bind:alt="state">OK</button>
+
+{# === OK: _x() interpolation === #}
+<button type="button" aria-label="{{ _x('Previous', 'tailwind-base', 'tailwind-base') }}">Prev</button>
+
+{# === OK: decorative empty alt — this rule's own empty-value exemption keeps it silent (EmptyAltRule covers Twig hash literals `{ alt: '' }`, a different surface). === #}
+<img src="/decorative.jpg" alt="">
+
+{# === OK: pure punctuation / symbol — not translatable === #}
+<button type="button" title="—">Em dash</button>
+<button type="button" aria-label="$50">Price</button>
+
+{# === OK: pure digits — not translatable === #}
+<input type="text" placeholder="0000">
+<img src="/x.jpg" alt="2024">
+{# twig-cs-fixer-enable PlainImg #}
+
+{# === OK: partial Twig interpolation — assume the {{ ... }} carries the translated text === #}
+<button type="button" title="{{ price|format }} {{ _x('USD', 'tailwind-base', 'tailwind-base') }}">Buy</button>
+
+{# === OK: type="button" / type="submit" — not in the scoped attribute set === #}
+<button type="button">Plain</button>
+
+{# === OK: word "title" elsewhere in markup — only literal `title=` attribute matches === #}
+<p>The title attribute is for tooltips.</p>
+<div class="title-styled">Heading</div>
