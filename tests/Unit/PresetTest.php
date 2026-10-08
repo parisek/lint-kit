@@ -6,7 +6,8 @@ namespace Parisek\LintKit\Tests\Unit;
 
 use Parisek\LintKit\Core\Twig\Rules\EmptyAltRule;
 use Parisek\LintKit\Twig\Preset;
-use Parisek\LintKit\WordPress\Twig\Rules\TranslationThemeNameRule;
+use Parisek\LintKit\Core\Twig\Rules\TranslationThemeNameRule;
+use Parisek\LintKit\Core\Twig\Rules\UnguardedOutputRule;
 use PHPUnit\Framework\TestCase;
 use TwigCsFixer\Rules\Node\NodeRuleInterface;
 use TwigCsFixer\Rules\RuleInterface;
@@ -32,13 +33,30 @@ final class PresetTest extends TestCase
     }
 
     /**
+     * @param array<string, mixed> $options
+     *
+     * @return list<string>
+     */
+    private function extraRoots(array $options): array
+    {
+        $config = Preset::config($options + ['templates' => [self::TEMPLATES], 'componentRoots' => [self::COMPONENTS]]);
+        foreach ($config->getRuleset()->getRules() as $rule) {
+            if ($rule instanceof UnguardedOutputRule) {
+                return (new \ReflectionProperty($rule, 'extraRoots'))->getValue($rule);
+            }
+        }
+
+        $this->fail('UnguardedOutputRule is not registered.');
+    }
+
+    /**
      * The old config.php needed one `require_once` and one `addRule()` for each rule, and a rule with
      * only one of the two silently never ran. Autoload removes the first. This test guards the second:
      * every rule class in the Core folder must be registered.
      */
     public function testEveryCoreRuleClassIsRegistered(): void
     {
-        $registered = $this->ruleClasses([]);
+        $registered = $this->ruleClasses(['themeName' => 'my-theme']);
 
         $missing = [];
         foreach (glob(__DIR__ . '/../../src/Core/Twig/Rules/*Rule.php') ?: [] as $file) {
@@ -52,13 +70,27 @@ final class PresetTest extends TestCase
         $this->assertContains(EmptyAltRule::class, $registered);
     }
 
-    public function testTheWordPressRuleLoadsOnlyWithItsSet(): void
+    public function testTheThemeNameRuleRunsOnlyWithAThemeName(): void
     {
         $this->assertNotContains(TranslationThemeNameRule::class, $this->ruleClasses([]));
-        $this->assertContains(
-            TranslationThemeNameRule::class,
-            $this->ruleClasses(['sets' => ['core', 'wordpress'], 'themeName' => 'my-theme'])
-        );
+        $this->assertContains(TranslationThemeNameRule::class, $this->ruleClasses(['themeName' => 'my-theme']));
+    }
+
+    /**
+     * The rule used to belong to the WordPress set. A Drupal project follows the same translation
+     * convention, so it is a Core rule now, and the WordPress set no longer needs a theme name.
+     */
+    public function testTheWordPressSetDoesNotNeedAThemeName(): void
+    {
+        $classes = $this->ruleClasses(['sets' => ['core', 'wordpress']]);
+
+        $this->assertNotContains(TranslationThemeNameRule::class, $classes);
+    }
+
+    public function testTheWordPressSetAddsTheSiteRoot(): void
+    {
+        $this->assertSame([], $this->extraRoots([]));
+        $this->assertSame(['site'], $this->extraRoots(['sets' => ['core', 'wordpress']]));
     }
 
     public function testRemoveRulesDropsARule(): void
@@ -90,12 +122,12 @@ final class PresetTest extends TestCase
         Preset::config(['templates' => [self::TEMPLATES], 'componentRoots' => [self::COMPONENTS], 'sets' => ['core', 'drupal']]);
     }
 
-    public function testTheWordPressSetNeedsAThemeName(): void
+    public function testAnEmptyThemeNameIsRefused(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('"themeName" is required');
+        $this->expectExceptionMessage('"themeName" must be a non-empty string');
 
-        Preset::config(['templates' => [self::TEMPLATES], 'componentRoots' => [self::COMPONENTS], 'sets' => ['core', 'wordpress']]);
+        Preset::config(['templates' => [self::TEMPLATES], 'componentRoots' => [self::COMPONENTS], 'themeName' => '  ']);
     }
 
     /**

@@ -1,0 +1,19 @@
+# Fixtures that carry no `Expected:` line, so FixtureExpectationsTest cannot assert a count for them.
+# They are only smoke-tested (they must lint without a crash). This list pins the exact set:
+# adding a fixture without a line, or losing the line of an existing one, fails the test and names the file.
+# Giving one of these a line is the way to shorten the list. One path per line, relative to tests/Fixtures.
+Twig/arbitrary-px-fixture.twig
+Twig/button-type-fixture.twig
+Twig/component-button-type-fixture.twig
+Twig/create-attribute-class-array-fixture.twig
+Twig/dump-fixture.twig
+Twig/home-url-link-fixture.twig
+Twig/prose-on-rich-text-fixture.twig
+Twig/space-xy-fixture.twig
+Twig/stretched-link-relative-fixture.twig
+Twig/transition-all-fixture.twig
+Twig/unguarded-fixture.twig
+Twig/unique-id-required-fixture-ok-no-dom-ids.twig
+Twig/unique-id-required-fixture-ok-no-loop-index.twig
+Twig/unique-id-required-fixture-ok-with-unique-id.twig
+Twig/unique-id-required-fixture.twig

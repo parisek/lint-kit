@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Parisek\LintKit\WordPress\Twig\Rules;
+namespace Parisek\LintKit\Core\Twig\Rules;
 
 use Twig\Environment;
 use Twig\Node\Expression\ConstantExpression;
@@ -11,7 +11,7 @@ use Twig\Node\Node;
 use TwigCsFixer\Rules\Node\AbstractNodeRule;
 
 /**
- * Warns when a WordPress translation call hard-codes a stale theme name
+ * Warns when a translation call hard-codes a stale theme name
  * in its `context` or `domain` slot — i.e. a slot containing a string
  * literal that doesn't match the project's styleguide `project.slug`.
  *
@@ -55,7 +55,8 @@ use TwigCsFixer\Rules\Node\AbstractNodeRule;
 final class TranslationThemeNameRule extends AbstractNodeRule
 {
 	/**
-	 * WordPress translation function dispatch table.
+	 * Translation function dispatch table. `_x`, `__`, `_n` and `_nx` exist in WordPress, in Drupal and
+	 * in the styleguide; the `esc_*` names exist only in WordPress and are harmless elsewhere.
 	 *
 	 * Values are 0-indexed positions in the `FunctionExpression::arguments` Node.
 	 * `null` means the slot does not exist for this function (e.g. `__()` has

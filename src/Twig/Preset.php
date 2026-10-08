@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Parisek\LintKit\Twig;
 
 use Parisek\LintKit\Core\Twig\Rules as Core;
-use Parisek\LintKit\WordPress\Twig\Rules as WordPress;
 use TwigCsFixer\Config\Config;
 use TwigCsFixer\File\Finder;
 use TwigCsFixer\Rules\Function\IncludeFunctionRule;
@@ -35,11 +34,14 @@ use TwigCsFixer\Standard\TwigCsFixer;
  *
  *  - `templates`      list<string>  Directories to lint. Required. Each must exist, so a typo fails loudly.
  *  - `sets`           list<string>  `core` (default) and `wordpress`. A set of another CMS is never loaded.
+ *                                   `wordpress` adds the Timber `site` root to the roots that need no guard.
  *  - `componentRoots` list<string>  Directories that hold `<id>/<id>.yaml` definitions, searched in order.
  *                                   Default: `<templates>/component` of each template directory that has one.
  *  - `extraRoots`     list<string>  Template roots that never need an `{% if %}` guard, on top of the built-in ones.
  *                                   The `wordpress` set adds `site`.
- *  - `themeName`      string        The translation text domain. Required with the `wordpress` set.
+ *  - `themeName`      string        The project's translation text domain (`project.slug`). With it, the Core rule
+ *                                   `TranslationThemeNameRule` checks that `_x()`, `__()`, `_n()` and the other
+ *                                   translation calls carry it. Without it, that rule does not run.
  *  - `style`          bool          The house style: indent of 2 with tabs, spacing around braces, no `include()` rule.
  *                                   Default: true. A project that wants its own style passes false.
  *  - `rules`          list<RuleInterface|NodeRuleInterface>  Project rules, added after the set rules.
@@ -86,10 +88,10 @@ final class Preset
         $extraRoots = $options['extraRoots'] ?? [];
         $themeName = $options['themeName'] ?? null;
         if (\in_array('wordpress', $sets, true)) {
-            if (!\is_string($themeName) || '' === trim($themeName)) {
-                throw new \InvalidArgumentException('Preset option "themeName" is required with the "wordpress" set (the translation text domain).');
-            }
             $extraRoots[] = 'site';
+        }
+        if (null !== $themeName && '' === trim($themeName)) {
+            throw new \InvalidArgumentException('Preset option "themeName" must be a non-empty string (the translation text domain).');
         }
 
         $componentRoots = $options['componentRoots'] ?? self::defaultComponentRoots($templates);
@@ -111,8 +113,8 @@ final class Preset
         foreach (self::coreRules(array_values(array_unique($extraRoots)), $componentRoots) as $rule) {
             $ruleset->addRule($rule);
         }
-        if (\in_array('wordpress', $sets, true)) {
-            $ruleset->addRule(new WordPress\TranslationThemeNameRule(trim((string) $themeName)));
+        if (null !== $themeName) {
+            $ruleset->addRule(new Core\TranslationThemeNameRule(trim($themeName)));
         }
         foreach ($options['rules'] ?? [] as $rule) {
             $ruleset->addRule($rule);

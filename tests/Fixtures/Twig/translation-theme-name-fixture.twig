@@ -1,5 +1,5 @@
 {# Fixture for TranslationThemeNameRule. Each block describes the expected behavior. #}
-{# Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/WordPress/Twig/translation-theme-name-fixture.twig #}
+{# Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/translation-theme-name-fixture.twig #}
 {# project.slug-dependent: outcomes assume `project.slug: tailwind-base` (parsed from styleguide.yaml). #}
 {# Re-running with a different project.slug would invert most outcomes — only `tailwind-base` runs this fixture. #}
 {# Expected: 12 warnings, 0 errors (TranslationThemeName) when project.slug=tailwind-base — 10 lines fire, two of them twice. Valid only at the project.slug named above; run in a downstream project and every matching literal below becomes a violation instead (29 in sloneek, 2026-07-27). #}
