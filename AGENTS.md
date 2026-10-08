@@ -68,7 +68,7 @@ There is no `composer.lock` in git. CI resolves the latest tree the constraints 
 
 **PHPStan baseline.** `phpstan-baseline.neon` holds 8 findings in the moved rules: 7 `Node instanceof Node` checks in loops and 1 redundant `is_string()`. They are not bugs. Fix them when you touch the rule.
 
-**Twig floor.** `twig/twig` is `^3.15`, the floor `twig-cs-fixer` itself sets. No older Twig is supported. `ContextVariable` extends `NameExpression` (checked in Twig 3.30), so a rule checks `NameExpression` alone. The earlier `|| instanceof ContextVariable` branches were dead code and are gone.
+**Twig floor.** `twig/twig` is `^3.30`, the Twig the projects run now (`twig-cs-fixer` itself sets only `^3.15`). No older Twig is supported. The owner pinned the floor to the current Twig on 2026-10-08. Raising the floor later is a breaking change; lowering it is not. `ContextVariable` extends `NameExpression` (checked in Twig 3.30), so a rule checks `NameExpression` alone. The earlier `|| instanceof ContextVariable` branches were dead code and are gone.
 
 ## Language
 
