@@ -1,0 +1,37 @@
+{
+    "name": "parisek/lint-kit",
+    "description": "Twig and PHPStan lint rules for WordPress and Drupal projects: a CMS-neutral core and one opt-in rule set per CMS.",
+    "type": "library",
+    "require": {
+        "php": ">=8.3",
+        "vincentlanglet/twig-cs-fixer": "^4.1.1"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.0 || ^12.0",
+        "phpstan/phpstan": "^2.2"
+    },
+    "suggest": {
+        "phpstan/extension-installer": "Loads the PHPStan rules of this package without a manual include."
+    },
+    "autoload": {
+        "psr-4": {
+            "Parisek\\LintKit\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Parisek\\LintKit\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "platform": {
+            "php": "8.3.0"
+        }
+    },
+    "scripts": {
+        "test": "phpunit"
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
