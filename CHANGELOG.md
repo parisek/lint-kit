@@ -4,6 +4,8 @@ All notable changes are listed here, grouped by rule set once rules exist. The f
 
 ## [Unreleased]
 
+## [0.1.0] — 2026-10-08
+
 ### Added
 
 - **Core set:** 39 Twig rules moved from `tailwind-base` with their fixtures, in `Parisek\LintKit\Core\Twig\Rules`.
