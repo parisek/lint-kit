@@ -1,0 +1,60 @@
+{# === NoopenerRule fixture ============================================
+Verifies token-level detection of `target="_blank"` without an
+accompanying `rel="noopener noreferrer"` (or at least `noopener`
+within ±3 lines, matching the Python check it replaces).
+
+Run from repo root:
+
+vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/noopener-fixture.twig
+
+Expected: 6 warnings, 0 errors (Noopener) — sections 1, 3, 5, 8, 10, 12
+====================================================================== #}
+
+{# 1) FAIL: bare target="_blank", no rel #}
+<a href="https://example.com" target="_blank">link</a>
+
+{# 2) OK: target="_blank" with rel="noopener noreferrer" on same line #}
+<a href="https://example.com" target="_blank" rel="noopener noreferrer">link</a>
+
+{# 3) FAIL: multi-line opening tag with target but no rel #}
+<a
+	href="https://example.com"
+	target="_blank"
+>multi-line</a>
+
+{# 4) OK: multi-line opening tag with target and rel within ±3 lines #}
+<a
+	href="https://example.com"
+	target="_blank"
+	rel="noopener noreferrer"
+>multi-line ok</a>
+
+{# 5) FAIL: single-quoted variant — target='_blank' with no rel #}
+<a href='https://example.com' target='_blank'>single-quoted</a>
+
+{# 6) OK: single-quoted with single-quoted rel #}
+<a href='https://example.com' target='_blank' rel='noopener noreferrer'>ok</a>
+
+{# 7) OK: Twig-interpolated href, rel present #}
+<a href="{{ url }}" target="_blank" rel="noopener noreferrer">interp ok</a>
+
+{# spacer — keep section 8 outside the ±3-line context window of section 7 #}
+{# spacer #}
+
+{# 8) FAIL: Twig-interpolated href, no rel #}
+<a href="{{ url }}" target="_blank">interp fail</a>
+
+{# 9) OK: inside Twig string literal with rel #}
+{% set link_ok = '<a href="x" target="_blank" rel="noopener noreferrer">x</a>' %}
+
+{# 10) FAIL: inside Twig string literal without rel #}
+{% set link_bad = '<a href="x" target="_blank">x</a>' %}
+
+{# 11) OK: inside Twig comment — comments tokenize as COMMENT_TEXT_TYPE #}
+{# example: <a href="x" target="_blank">x</a> — bad pattern, but commented out #}
+
+{# 12) FAIL: <area> element also creates new browsing context #}
+<area shape="rect" coords="0,0,100,100" href="/page" target="_blank">
+
+{# 13) OK: <area> with rel #}
+<area shape="rect" coords="0,0,100,100" href="/page" target="_blank" rel="noopener noreferrer">

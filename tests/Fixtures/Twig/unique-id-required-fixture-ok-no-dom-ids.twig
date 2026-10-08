@@ -1,0 +1,12 @@
+{# Fixture for UniqueIdRequiredRule. OK case — loop.index used but only in safe contexts (data-*, class, inner text). No DOM identifier attributes touched. #}
+
+<section class="component-list">
+	{% for item in content.items %}
+		<article class="card" data-index="{{ loop.index }}" data-total-count="{{ content.items|length }}">
+			<header class="card__header card-{{ loop.index }}-header">
+				<span>Item #{{ loop.index }}</span>
+			</header>
+			<p>This is item number {{ loop.index }} of the list.</p>
+		</article>
+	{% endfor %}
+</section>

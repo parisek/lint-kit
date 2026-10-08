@@ -1,0 +1,66 @@
+{# === ResizerCropRule fixture ========================================
+Verifies AST-aware detection of `|resizer([w, h, _, 'crop'])` calls
+where width or height is missing. Each section labelled "OK" must
+stay silent; each "FAIL" must trigger one warning.
+
+Run from repo root:
+
+vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/resizer-crop-fixture.twig
+
+Expected: 4 warnings, 0 errors (ResizerCrop) — sections 4, 5, 6, 7
+==================================================================== #}
+
+{# 1) OK: width + height + crop, string literals #}
+{% if image %}
+	{{ image|resizer(['800', '600', '', 'crop']) }}
+{% endif %}
+
+{# 2) OK: width + height + crop, number literals #}
+{% if image %}
+	{{ image|resizer([800, 600, '', 'crop']) }}
+{% endif %}
+
+{# 3) OK: no crop — dimensions optional #}
+{% if image %}
+	{{ image|resizer(['', '', '', '']) }}
+{% endif %}
+
+{# 4) FAIL: crop without width #}
+{% if image %}
+	{{ image|resizer(['', '600', '', 'crop']) }}
+{% endif %}
+
+{# 5) FAIL: crop without height #}
+{% if image %}
+	{{ image|resizer([800, '', '', 'crop']) }}
+{% endif %}
+
+{# 6) FAIL: crop with both width and height missing #}
+{% if image %}
+	{{ image|resizer(['', '', '', 'crop']) }}
+{% endif %}
+
+{# 7) FAIL: crop with width = 0 (degenerate) #}
+{% if image %}
+	{{ image|resizer([0, 600, '', 'crop']) }}
+{% endif %}
+
+{# 8) OK: variable dimensions — no static evaluation #}
+{% if image %}
+	{{ image|resizer([w, h, '', 'crop']) }}
+{% endif %}
+
+{# 9) OK: not 'crop' mode — other modes don't require both dims #}
+{% if image %}
+	{{ image|resizer(['', '', '', 'fit']) }}
+{% endif %}
+
+{# 10) OK: multi-line array — AST collapses whitespace #}
+{% if image %}
+	{{ image|resizer([
+		800,
+		600,
+		'',
+		'crop',
+	]) }}
+{% endif %}

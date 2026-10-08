@@ -1,0 +1,115 @@
+{# === LinkFieldShapeRule fixture ========================================
+Verifies detection of a plain string passed to a `component_*({…})` field
+the component's own `<name>.yaml` declares as `type: link` + `shape: link`.
+
+A `shape: link` field arrives as an ACF link object, so the template guards
+on `content.x.url`. Twig resolves `.url` on a string to null, the guard is
+false, and the element is never rendered — no error, HTTP 200, no linter.
+
+`shape:` is the discriminator, NOT `type:`. The same `type: link` also
+covers `shape: url`, which reaches the template already flattened to an
+href string — there a string is correct, and `component_button({ url: … })`
+depends on it. Keying on `type: link` alone would flag every one of those.
+
+Every section below calls `component_lint_fixture_link_shape`, whose only
+file is `definitions/lint-fixture-link-shape/…yaml`, beside this fixture.
+That indirection is the point:
+
+	Until 2026-08-08 the sections called `dialog`, `page-header-image` and
+	`article-list`. Those exist upstream, so this fixture passed here while
+	failing in any consumer that had dropped them. one consumer had deleted the
+	first two and removed `article-list`'s `link` field, so all three positive
+	sections hit the "no definition -> skip" path and the count fell 3 -> 0.
+	The failure read as a rule regression; the rule was fine. And because the
+	negative sections also resolve to nothing once the components are gone,
+	they pass trivially — the rule kept zero coverage while its test stayed
+	loud about only the count. A frozen, `class: exact` fixture must not
+	depend on which components a downstream happens to keep.
+
+Skip conditions:
+- `shape: url`, and fields with no `shape:` at all — correct, or unknowable
+- an empty string — the idiomatic "no link here", same as an absent field
+- a variable / call / ternary — shape cannot be known statically
+- a hash passed as a pre-built variable, and dynamic keys — nothing to read
+- a component with no `<name>.yaml` — nothing to check against
+
+Known coverage gap, deliberate: the rule recurses into `repeater` and
+`group` sub-fields, and section 8 pins only that the recursion does not
+OVER-fire on a `shape: url` sub-field. A nested `shape: link` field — the
+shape of the motivating downstream bug, `fields → modules (repeater) →
+fields → more_link` — is still not exercised. The stub definition now makes
+that testable without waiting for a real component to grow one; adding it is
+a separate change from this one.
+
+Run from repo root:
+
+vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/link-field-shape-fixture.twig
+
+Expected: 3 warnings, 0 errors (LinkFieldShape) — sections 1, 2, 3
+====================================================================== #}
+
+{# 1) FAIL: `link` is shape: link — the template would guard on
+	`content.link.url`, so this string renders no link at all. #}
+{{ component_lint_fixture_link_shape({
+	title: 'Kontaktujte nás',
+	link: 'https://example.com/kontakt',
+}) }}
+
+{# 2) FAIL: a concatenation is still a string. It merely looks more
+	deliberate than a literal, which is exactly how the original bug
+	survived review. #}
+{{ component_lint_fixture_link_shape({
+	title: 'Reference',
+	button: homeUrl ~ 'page/references',
+}) }}
+
+{# 3) FAIL: a bare relative path, the third way the same mistake is written. #}
+{{ component_lint_fixture_link_shape({
+	title: 'Aktuality',
+	link: 'page/blog',
+}) }}
+
+{# 4) OK: `url` is shape: url — already an href string, printed directly.
+	Must never fire. #}
+{{ component_lint_fixture_link_shape({
+	title: 'Odeslat',
+	url: '#',
+}) }}
+
+{# 5) OK: the correct object shape. #}
+{{ component_lint_fixture_link_shape({
+	title: 'Kontaktujte nás',
+	link: { url: 'page/kontakt', title: 'Napište nám' },
+}) }}
+
+{# 6) OK: empty string — behaves identically to an absent field. #}
+{{ component_lint_fixture_link_shape({
+	title: 'Bez odkazu',
+	link: '',
+}) }}
+
+{# 7) OK: a variable — the rule cannot know its shape and must stay quiet
+	rather than trade a silent false negative for a loud false positive. #}
+{{ component_lint_fixture_link_shape({
+	title: 'Dynamický',
+	link: content.dialog_link,
+}) }}
+
+{# 8) OK: a repeater whose sub-field is shape: url — a string is correct
+	there, and this pins that the recursion does not over-fire. #}
+{{ component_lint_fixture_link_shape({
+	items: [
+		{ title: 'První článek', url: 'page/article-full' },
+		{ title: 'Druhý článek', url: 'page/article-full' },
+	],
+}) }}
+
+{# 9) OK: `type: link` with no `shape:` — unknowable, must stay quiet. #}
+{{ component_lint_fixture_link_shape({
+	untyped_link: 'https://example.com',
+}) }}
+
+{# 10) OK: a component with no YAML definition — nothing to check against. #}
+{{ component_this_component_does_not_exist({
+	link: 'https://example.com',
+}) }}

@@ -1,0 +1,70 @@
+{#
+name: "Component content scope fixture"
+description: "Fixture for ComponentContentScopeRule — deliberately non-compliant sample code, never rendered, never shipped. Documentation by example: nothing currently asserts it. The lint finder scans static/templates only, and the rule additionally scopes itself to templates/component/**, so this file is doubly out of range of a normal run. Were it in scope, the three reads above the divider would warn (caller_flag, outer_title, stray_option) and nothing below it would. The rule's real validation is its first run against the 66 shipped components, which produced exactly two findings, both genuine — see the PR."
+category: "Fixture"
+kind: utility
+#}
+
+{#
+Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/component/content-scope/content-scope-fixture.twig
+Expected: 3 warnings, 0 errors (ComponentContentScope) — the three SHOULD FIRE cases below
+
+This file sits under component/<name>/ on purpose. The rule is in scope only for a path that matches
+/component/<name>/<file>.twig. At the top level of the fixtures folder (the old place) the rule never ran,
+and the fixture passed with zero findings while claiming three.
+#}
+
+{# --- SHOULD FIRE: read from whatever context the caller happened to have --- #}
+
+{% if caller_flag %}
+	<p>This renders differently depending on where the component is used.</p>
+{% endif %}
+
+<h2>{{ outer_title }}</h2>
+
+{{ component_button({ title: stray_option }) }}
+
+{# --- SHOULD NOT FIRE: everything below is either passed, bound or ambient --- #}
+
+{# content and anything under it is the component's own input #}
+<h3>{{ content.title }}</h3>
+{% if content.items %}
+	{# {% for %} targets, both the one-name and key/value forms #}
+	{% for item in content.items %}
+		<span>{{ item.label }}</span>
+	{% endfor %}
+	{% for index, entry in content.items %}
+		<span>{{ index }}: {{ entry.label }}</span>
+	{% endfor %}
+{% endif %}
+
+{# {% set %}, in both the assignment and capture forms #}
+{% set computed = content.title|upper %}
+{{ computed }}
+{% set captured %}
+	<em>{{ content.title }}</em>
+{% endset %}
+{{ captured }}
+
+{# imported macro namespace #}
+{% import '@macro/icons/icons.twig' as icons %}
+{{ icons.get('ico-basic-check') }}
+
+{# arrow-function parameters bind for the callback's own scope #}
+{{ (content.classes is iterable ? content.classes : [content.classes])|filter(v => v is not empty)|join(' ') }}
+{{ content.items|map((value, key) => value.label ~ key)|join(', ') }}
+
+{# project globals: ambient on both the styleguide and the CMS bootstrap #}
+<img src="{{ templateUrl }}/images/logo.svg" alt="">
+<a href="{{ homeUrl }}">home</a>
+<span>{{ langcode }}</span>
+
+{# function calls are not variable reads #}
+{{ _x('Read more', 'button') }}
+{{ component_picture({ image: placeholder() }) }}
+
+{# filters and tests are not variable reads #}
+{{ content.body|typography|raw }}
+{% if content.body is not empty %}
+	<div>{{ content.body }}</div>
+{% endif %}

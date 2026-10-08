@@ -1,0 +1,9 @@
+# Fixture sibling for MetadataYamlParsesRule's ADR 0007 exemption. Its mere
+# presence is the exemption — the rule never reads the contents.
+name: "Metadata YAML Defined"
+category: "Block"
+fields:
+  toggle:
+    label: Toggle
+    type: boolean
+    role: field

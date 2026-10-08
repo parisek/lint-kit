@@ -1,0 +1,12 @@
+{# title: "Broken variant annotation — this: would throw { if: parsed } fatally #}
+{# ^ MetadataYamlParsesRule fixture — EXEMPT case (variant sibling, NOT <dir>/<dir>.twig shape).
+
+styleguide.*.twig siblings mirror the runtime's NON-fatal surface:
+discoverVariants() catches the ParseException at its call-site and falls back to
+the variants: map per-field (see parisek/styleguide's variant-annotation contract),
+so the lint rule must stay silent here even though this comment is invalid YAML.
+
+Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/metadata-yaml-parses-exempt/
+Expected: 0 warnings, 0 errors (MetadataYamlParses)
+#}
+<div class="metadata-yaml-exempt"></div>

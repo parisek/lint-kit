@@ -1,0 +1,9 @@
+# Fixture sibling for ComponentMetadataRule's ADR 0007 exemption. Its mere
+# presence is the exemption — the rule never reads the contents.
+name: "Component Metadata YAML Exempt"
+category: "Block"
+fields:
+  toggle:
+    label: Toggle
+    type: boolean
+    role: field

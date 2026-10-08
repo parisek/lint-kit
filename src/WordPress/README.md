@@ -1,7 +1,7 @@
 # WordPress
 
-Opt-in rules for WordPress projects (Timber, ACF, WPML). A Drupal project never loads this set and never needs its stubs.
+Opt-in rules for WordPress projects. A Drupal project never loads this set and never needs its stubs.
 
-Rules load by PSR-4 autoload under `Parisek\LintKit\WordPress\`. A rule does not read project files. The project config passes its options in (issue portadesign/tailwind-base#874, R13.14 to R13.16).
+Today it holds one Twig rule, `TranslationThemeNameRule` (a dispatch table of WordPress translation functions that checks the text domain). The preset also adds `site`, the Timber global, to the roots that need no guard.
 
-Status: planned. The first audit sorts every existing rule into Core, WordPress or Drupal.
+The seven PHPStan rules of the old setup (`portadesign.wp.*`) move here as the last step of the plan.

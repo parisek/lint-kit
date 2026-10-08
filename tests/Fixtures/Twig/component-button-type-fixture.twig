@@ -1,0 +1,72 @@
+{# Fixture for ComponentButtonTypeRule. Each comment block describes the expected behavior. #}
+{# Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/component-button-type-fixture.twig #}
+
+{# === FAIL: tag: 'button' without wrapper_attributes === #}
+{{ component_button({
+	title: 'No wrapper attrs',
+	tag: 'button',
+}) }}
+
+{# === FAIL: tag: 'button' with wrapper_attributes but no type === #}
+{{ component_button({
+	title: 'Missing type',
+	tag: 'button',
+	wrapper_attributes: { '@click': 'open = true' },
+}) }}
+
+{# === FAIL: tag: 'button' with empty type === #}
+{{ component_button({
+	title: 'Empty type',
+	tag: 'button',
+	wrapper_attributes: { type: '' },
+}) }}
+
+{# === OK: tag: 'button' with type 'submit' === #}
+{{ component_button({
+	title: 'Odeslat',
+	tag: 'button',
+	wrapper_attributes: { type: 'submit' },
+}) }}
+
+{# === OK: tag: 'button' with type 'button' === #}
+{{ component_button({
+	title: 'Toggle',
+	tag: 'button',
+	wrapper_attributes: { type: 'button', '@click': 'open = !open' },
+}) }}
+
+{# === OK: default tag (anchor) — no requirement === #}
+{{ component_button({
+	title: 'Read more',
+	url: '/article',
+}) }}
+
+{# === OK: tag: 'span' — no requirement === #}
+{{ component_button({
+	title: 'Decoration',
+	tag: 'span',
+}) }}
+
+{# === OK: tag: 'div' — no requirement === #}
+{{ component_button({
+	title: 'Card label',
+	tag: 'div',
+}) }}
+
+{# === OK: dynamic tag — can't prove it's 'button', skip === #}
+{{ component_button({
+	title: 'Dynamic',
+	tag: content.button_tag,
+}) }}
+
+{# === OK: dynamic wrapper_attributes — can't inspect, skip === #}
+{{ component_button({
+	title: 'Dynamic attrs',
+	tag: 'button',
+	wrapper_attributes: content.button_attrs,
+}) }}
+
+{# === OK: not component_button — different function entirely === #}
+{{ component_picture({
+	tag: 'button',
+}) }}

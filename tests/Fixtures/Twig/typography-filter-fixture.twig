@@ -1,0 +1,64 @@
+{# === TypographyFilterRule fixture =====================================
+Verifies AST-aware detection of `{{ <root>.<field> }}` printed without
+any `|filter` (typography being the canonical one). Mirrors the Python
+`missing-typography` regex.
+
+Roots: content, heading (item is intentionally out of scope — it's
+overloaded across menu/nav/styleguide-chrome metadata loops where
+|typography would inject markup into plain labels)
+
+Fields: title, perex, subtitle, description, label, name, heading
+
+Run from repo root:
+
+vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/typography-filter-fixture.twig
+
+Expected: 4 warnings, 0 errors (TypographyFilter) — sections 1, 3, 5, 14
+====================================================================== #}
+
+{# 1) FAIL: bare content.title #}
+{% if content.title %}{{ content.title }}{% endif %}
+
+{# 2) OK: content.title with typography filter #}
+{% if content.title %}{{ content.title|typography }}{% endif %}
+
+{# 3) FAIL: content.perex without filter #}
+{% if content.perex %}{{ content.perex }}{% endif %}
+
+{# 4) OK: `item` is out of scope — overloaded for non-CMS metadata loops #}
+{% for item in content.items %}{% if item.title %}{{ item.title }}{% endif %}{% endfor %}
+
+{# 5) FAIL: heading.subtitle without filter #}
+{% if heading.subtitle %}{{ heading.subtitle }}{% endif %}
+
+{# 6) OK: any filter satisfies — |raw is enough to silence the rule #}
+{% if content.title %}{{ content.title|raw }}{% endif %}
+
+{# 7) OK: chained filters — outer is still a FilterExpression #}
+{% if content.title %}{{ content.title|typography|raw }}{% endif %}
+
+{# 8) OK: `url` is not in the text-field list — never gets typography #}
+{% if content.url %}{{ content.url }}{% endif %}
+
+{# 9) OK: `foo` is not in the root list — rule scope is content/item/heading #}
+{% if foo.title %}{{ foo.title }}{% endif %}
+
+{# 10) OK: 3-segment path falls outside the rule's `root.field` shape #}
+{% if content.heading.title %}{{ content.heading.title }}{% endif %}
+
+{# 11) OK: null-coalesce wraps the access — top expression isn't bare GetAttr #}
+{% if content.title %}{{ content.title ?? 'fallback' }}{% endif %}
+
+{# 12) OK: string concat wraps the access — top expression is BinaryConcat #}
+{% if content.title %}{{ content.title ~ ' suffix' }}{% endif %}
+
+{# 13) OK: `{% set %}` isn't a print, so PrintNode never sees it #}
+{% set saved = content.title %}
+
+{# 14) FAIL: tab-indented bare content.label — indentation must not affect detection #}
+{% if content.label %}
+	{{ content.label }}
+{% endif %}
+
+{# 15) OK: print is inside a Twig comment — comment text isn't parsed as PrintNode #}
+{# example: {{ content.title }} — bad pattern, but commented out #}

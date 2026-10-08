@@ -1,0 +1,44 @@
+{# Fixture for TransitionAllRule. Each comment block describes the expected behavior. #}
+{# Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/transition-all-fixture.twig #}
+
+{# === FAIL: bare transition-all in raw HTML class attribute === #}
+<div class="bg-white hover:bg-primary-500 shadow-md hover:shadow-lg transition-all">x</div>
+
+{# === FAIL: variant-prefixed (hover, lg, dark) === #}
+<div class="hover:transition-all lg:transition-all dark:transition-all">x</div>
+
+{# === FAIL: inside Twig string array (STRING_TYPE) === #}
+{% set attrs = create_attribute({
+	class: [
+		'flex flex-col',
+		'transition-all duration-300',
+	],
+}) %}
+
+{# === FAIL: per-line dedupe — multiple transition-all on one line fires ONCE === #}
+<div class="transition-all hover:transition-all">two on one line</div>
+
+{# === FAIL: across the alpine bind shorthand === #}
+<button class="transition-all" :class="{ 'opacity-50': busy }">x</button>
+
+{# === OK: property-scoped transition === #}
+<div class="bg-white hover:bg-primary-500 transition-[background-color]">x</div>
+<div class="transition-[background-color,box-shadow] duration-300">x</div>
+
+{# === OK: lookalike substrings in unrelated identifiers must NOT trigger === #}
+<div class="my-transition-all-utility">no — leading char is a letter</div>
+<div class="pre-transition-all-foo">no — `pre-` makes the leading char alpha</div>
+<div class="transition-allowed">no — `allowed` makes trailing alphanumeric, lookahead blocks</div>
+<div class="transition-allowance">no — same lookahead block</div>
+
+{# === OK: standalone transition-* with property still allowed === #}
+<div class="transition-colors transition-opacity transition-transform">x</div>
+
+{# === OK: transition-all appearing in a Twig comment is sacred === #}
+{# We could use transition-all here but it's just a comment. #}
+
+{# === KNOWN LIMITATION: literal `transition-all` in HTML body text WILL fire
+   (same limitation as SpaceXYRule for `space-y-4`). Tokens don't preserve
+   HTML class-vs-content context — accept the false positive because writing
+   raw Tailwind class names in user-facing copy is vanishingly rare. If you
+   actually need this, Layer-A disable with a reason. #}

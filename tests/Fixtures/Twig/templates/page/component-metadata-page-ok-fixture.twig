@@ -1,0 +1,40 @@
+{#
+ComponentMetadataRule fixture — page template OK case.
+
+Page templates (those whose path contains `/templates/page/`) follow a different
+metadata convention: name / usage / description / weight — NO mandatory `category`.
+This fixture verifies that omitting `category` on a page template does NOT trigger
+a warning.
+
+The file lives under `fixtures/templates/page/` precisely so the rule's
+page-template detection (`str_contains($path, '/templates/page/')`) fires — the
+exemption is what's under test, so the path has to satisfy it. The default
+config.php Finder only scans `static/templates/`, so this fixture is NOT linted
+automatically; lint it explicitly to exercise the exemption:
+
+vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/templates/page/component-metadata-page-ok-fixture.twig
+
+Expected: 0 warnings, 0 errors (ComponentMetadata) — no `category` required for page templates
+
+See: component-metadata-ok-fixture.twig (component with full metadata)
+component-metadata-fail-fixture.twig (component with multiple violations)
+
+name: "Article - Detail"
+description: "Page template — no category required."
+usage: breadcrumb,page-header-default,content
+weight: 98
+asana: https://app.asana.com/0/1234567890/9876543210
+#}
+{% extends '@component/component/component.twig' %}
+{% set component = {
+	tag: 'article',
+	name: 'article-full',
+	id: content.wrapper_id,
+	classes: [
+		'overflow-x-clip',
+		content.wrapper_classes,
+	],
+} %}
+{% block content %}
+	<p>Page template without category — no ComponentMetadata warning expected.</p>
+{% endblock %}

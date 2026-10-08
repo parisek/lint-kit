@@ -1,0 +1,27 @@
+{# === WrapperClassesRule fixture — FAIL case ============================
+Component template that extends `@component/component/component.twig`
+WITHOUT exposing `content.wrapper_classes` in its `classes:` array. This
+closes the wrapper to per-instance styling overrides from the parent CMS.
+
+The rule fires once per Module — file-level scope, not per-section.
+Two-fixture pair (`-fail` + `-ok`) gives the same coverage that
+multi-section files give for token/expression-level rules.
+
+Run from repo root:
+
+vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/wrapper-classes-fail-fixture.twig
+
+Expected: 1 warning, 0 errors (WrapperClasses)
+====================================================================== #}
+{% extends '@component/component/component.twig' %}
+{% set component = {
+	name: 'wrapper-classes-fail',
+	id: content.wrapper_id,
+	classes: [
+		'my-16 xl:my-20 2xl:my-32',
+	],
+	container: 'container',
+} %}
+{% block content %}
+	<p>This component is missing content.wrapper_classes.</p>
+{% endblock %}

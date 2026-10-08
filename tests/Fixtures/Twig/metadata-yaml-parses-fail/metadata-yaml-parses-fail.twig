@@ -1,0 +1,20 @@
+{#
+name: "Metadata YAML Fail"
+category: "Block"
+fields:
+	toggle:
+		title: Toggle
+		description: mirrors legacy `body.home .thing { padding-top: 0 }` behaviour
+#}
+{# ^ MetadataYamlParsesRule fixture — FAIL case (main-template shape: <dir>/<dir>.twig).
+
+The field description above is an UNQUOTED plain scalar containing `: ` inside
+`{ padding-top: 0 }` — YAML reads the colon as a mapping separator and throws.
+This is the exact real-world shape that silently dropped a project's blog-slider
+from the styleguide catalogue. The other real trigger (a value STARTING with a
+double quote, `title: "More" button label`) fails the same way.
+
+Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/metadata-yaml-parses-fail/
+Expected: 1 warning, 0 errors (MetadataYamlParses)
+#}
+<div class="metadata-yaml-fail"></div>

@@ -1,0 +1,44 @@
+{#
+name: "Template Order OK"
+description: ""
+category: "Test"
+#}
+{#
+	This block is deliberately NOT part of the metadata comment above (#452).
+
+	The manifest fingerprint drops a leading comment that carries a `name:`
+	line, because `usage:` and `category:` are per-project and regenerated
+	downstream (#227). A fixture's Run: and Expected: lines are the opposite —
+	skeleton-owned, and the only thing carrying the fixture's claim to truth.
+	Kept inside that block, an upstream rewrite is invisible to drift
+	detection: downstream keeps the old wording, verify reports OK, and
+	fixtures.spec.js then fails on a fixture it cannot parse.
+	Measured on eprukaz, 2026-07-30.
+#}
+{#
+TemplateOrderRule fixture — OK case.
+
+Component template that follows the canonical top-level order:
+metadata → import → extends → set component → block content.
+
+Pairs with `template-order-fail-fixture.twig`. Sister negative cases
+(template that doesn't extend anything, template that extends a
+different parent) stay silent automatically — the rule's first guard
+short-circuits on Modules whose `parent` isn't `@component/component/component.twig`.
+
+Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/template-order-ok-fixture.twig
+Expected: 0 warnings, 0 errors (TemplateOrder)
+#}
+{% import '@macro/icons/icons.twig' as icons %}
+{% extends '@component/component/component.twig' %}
+{% set component = {
+	name: 'template-order-ok',
+	id: content.wrapper_id,
+	classes: [
+		'my-16',
+		content.wrapper_classes,
+	],
+} %}
+{% block content %}
+	<p>Canonical order.</p>
+{% endblock %}

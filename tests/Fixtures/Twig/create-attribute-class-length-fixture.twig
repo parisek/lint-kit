@@ -1,0 +1,52 @@
+{# Fixture for CreateAttributeClassLengthRule. Each block describes the expected behavior. #}
+{# Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/create-attribute-class-length-fixture.twig #}
+{# Expected: 2 warnings, 0 errors (CreateAttributeClassLength) — the two FAIL cases below #}
+
+{# === FAIL: a single array entry is a 150+ char class list (splittable across lines) === #}
+{% set attrs = create_attribute({
+	class: [
+		'relative inline-block before:absolute before:-bottom-1 before:inset-x-0 before:h-px before:bg-current before:duration-300 before:ease-in-out before:transition-transform before:scale-x-0',
+		'mt-4',
+	],
+}) %}
+
+{# === FAIL: bare (non-array) class string over the limit, with spaces === #}
+{% set attrs = create_attribute({
+	class: 'flex flex-col items-center justify-center gap-4 px-6 py-12 lg:px-12 lg:py-24 bg-primary-950 text-white rounded-xl shadow-lg ring-1 ring-gray-900/10 transition-colors',
+}) %}
+
+{# === OK: long class list already split into several short array entries === #}
+{% set attrs = create_attribute({
+	class: [
+		'relative inline-block',
+		'before:absolute before:-bottom-1 before:inset-x-0 before:h-px before:bg-current',
+		'before:duration-300 before:ease-in-out before:transition-transform',
+		'before:scale-x-0 group-hover:before:scale-x-100',
+	],
+}) %}
+
+{# === OK: an unsplittable arbitrary value over the limit (no space — Tailwind uses _) === #}
+{# Second entry keeps it a multi-element array so CreateAttributeClassArrayRule stays quiet. #}
+{% set attrs = create_attribute({
+	class: [
+		'absolute inset-0',
+		'bg-[linear-gradient(to_bottom,rgb(0_0_0/0.6)_0%,rgb(0_0_0/0)_25%,rgb(0_0_0/0)_50%,rgb(0_0_0/0)_75%,rgb(0_0_0/0.6)_100%)]',
+	],
+}) %}
+
+{# === OK: short entries plus a conditional (ConditionalExpression is not checked) === #}
+{% set attrs = create_attribute({
+	class: [
+		'flex items-center gap-2',
+		is_active ? 'font-bold' : 'font-semibold',
+	],
+}) %}
+
+{# === OK: long string lives in a NON-class attribute (rule only scopes to class) === #}
+{% set attrs = create_attribute({
+	class: 'btn btn-primary',
+	'data-config': 'this-is-a-very-long-data-attribute-value-that-exceeds-the-limit-but-is-not-a-class-list-so-it-must-not-be-flagged-by-this-rule',
+}) %}
+
+{# === OK: not a create_attribute call — a long bare string elsewhere is out of scope === #}
+{% set label = 'this is a long plain string that is not inside create_attribute class and therefore is not the concern of this particular lint rule at all' %}

@@ -1,0 +1,19 @@
+{#
+name: "Metadata YAML OK"
+description: "Properly quoted lookalikes: `body.home .thing { padding-top: 0 }` stays inert inside a double-quoted scalar."
+category: "Block"
+fields:
+	more_link:
+		title: '"More" button label (per module)'
+		description: "legacy `body.home .thing { padding-top: 0 }` — quoted, so the colon is harmless"
+#}
+{# ^ MetadataYamlParsesRule fixture — OK case (main-template shape: <dir>/<dir>.twig).
+
+Both real-world trigger shapes appear here in their CORRECT form: the brace-and-colon
+fragment lives inside a double-quoted scalar, and the value starting with a double
+quote is wrapped in single quotes. Valid YAML — the rule must stay silent.
+
+Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/metadata-yaml-parses-ok/
+Expected: 0 warnings, 0 errors (MetadataYamlParses)
+#}
+<div class="metadata-yaml-ok"></div>

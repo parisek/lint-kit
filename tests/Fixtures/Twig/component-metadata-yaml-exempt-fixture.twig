@@ -1,0 +1,25 @@
+{#
+ComponentMetadataRule fixture — EXEMPT case (sibling <id>.yaml definition).
+
+This template extends the component base and has NO `name:` / `category:` keys, so
+without the ADR 0007 gate it would fire two warnings. It stays silent because
+component-metadata-yaml-exempt-fixture.yaml sits beside it — the same resolution
+ComponentParser::readComponentMetadata() performs, where the sibling definition
+supplies every key this rule checks and the front-comment is never read.
+
+Delete the sibling .yaml and this fixture must fire again; that is the regression
+this case pins.
+
+Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/component-metadata-yaml-exempt-fixture.twig
+Expected: 0 warnings, 0 errors (ComponentMetadata)
+#}
+{% extends '@component/component/component.twig' %}
+{% set component = {
+	name: 'component-metadata-yaml-exempt-fixture',
+	classes: [
+		content.wrapper_classes,
+	],
+} %}
+{% block content %}
+	<p>Metadata lives in the sibling definition.</p>
+{% endblock %}

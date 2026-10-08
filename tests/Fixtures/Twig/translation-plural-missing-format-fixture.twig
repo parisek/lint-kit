@@ -1,0 +1,62 @@
+{# Fixture for TranslationPluralMissingFormatRule. Each block describes the expected behavior. #}
+{# Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/translation-plural-missing-format-fixture.twig #}
+{# Expected: 10 warnings, 0 errors (TranslationPluralMissingFormat) — one per FAIL case #}
+{# Note: every case sits in an `aria-label` attribute so TranslationMissingTypography (which watches visible text nodes) stays silent and the run emits exactly 10 — only this rule's warnings. The placement is a test-isolation device, not a claim that plurals belong in attributes. If a future rule fires on a line here, fix the case, don't relax this rule. #}
+
+{# === FAIL 1: _nx with %s and no |format — the shape measured on every Drupal call site === #}
+<div aria-label="{{ _nx('1 review', '%s reviews', count, 'tailwind-base', 'tailwind-base') }}"></div>
+
+{# === FAIL 2: _n with %d and no |format === #}
+<div aria-label="{{ _n('%d day', '%d days', count, 'tailwind-base') }}"></div>
+
+{# === FAIL 3: placeholder only in the SINGULAR — still unsubstituted when count is 1 === #}
+<div aria-label="{{ _n('%d item', 'many items', count, 'tailwind-base') }}"></div>
+
+{# === FAIL 4: positional placeholder === #}
+<div aria-label="{{ _nx('%1$s result', '%1$s results', count, 'tailwind-base', 'tailwind-base') }}"></div>
+
+{# === FAIL 5: the typography-aware variant is the same trap === #}
+<div aria-label="{{ _nxt('%s minute read', '%s minutes read', count, 'tailwind-base', 'tailwind-base') }}"></div>
+
+{# === OK 6: |format supplies the count — the correct shape in all three runtimes === #}
+<div aria-label="{{ _nx('%s review', '%s reviews', count, 'tailwind-base', 'tailwind-base')|format(count) }}"></div>
+
+{# === OK 7: _n with |format === #}
+<div aria-label="{{ _n('%d day', '%d days', count, 'tailwind-base')|format(count) }}"></div>
+
+{# === OK 8: no placeholder at all — the count is printed by the surrounding markup === #}
+<div aria-label="{{ count }} {{ _nx('day', 'days', count, 'tailwind-base', 'tailwind-base') }}"></div>
+
+{# === OK 9: no placeholder — forms handed to JavaScript, which selects per tick via Intl.PluralRules === #}
+<div data-one="{{ _n('day', 'days', 1, 'tailwind-base') }}" data-few="{{ _n('day', 'days', 2, 'tailwind-base') }}" data-many="{{ _n('day', 'days', 5, 'tailwind-base') }}"></div>
+
+{# === OK 10: escaped percent is not a placeholder === #}
+<div aria-label="{{ _nx('100%% off', '100%% off', count, 'tailwind-base', 'tailwind-base') }}"></div>
+
+{# === OK 11: dynamic singular — the literal cannot be read, so the rule stays silent rather than guessing === #}
+<div aria-label="{{ _nx(singular_label, plural_label, count, 'tailwind-base', 'tailwind-base') }}"></div>
+
+{# === OK 12: not a plural helper — _x carrying a placeholder is out of scope here === #}
+<div aria-label="{{ _x('Copyright %s', 'tailwind-base', 'tailwind-base')|format(2026) }}"></div>
+
+{# === OK 13: |format reached through another filter — the placeholder still gets its value === #}
+<div aria-label="{{ _nx('%s review', '%s reviews', count, 'tailwind-base', 'tailwind-base')|trim|format(count) }}"></div>
+
+{# === OK 14: the call wrapped in a binary expression under |format — same, one level deeper === #}
+<div aria-label="{{ (_nx('%s review', '%s reviews', count, 'tailwind-base', 'tailwind-base') ~ '!')|format(count) }}"></div>
+
+{# === FAIL 15: width/precision conversion is a placeholder too === #}
+<div aria-label="{{ _n('%.2f hour', '%.2f hours', count, 'tailwind-base') }}"></div>
+
+{# === FAIL 16: custom padding char — the reported text must not truncate at %'x === #}
+<div aria-label="{{ _n('%\'x10d slot', '%\'x10d slots', count, 'tailwind-base') }}"></div>
+
+{# === FAIL 17: named arguments — Twig keys these by parameter name, so a positional read missed them silently === #}
+<div aria-label="{{ _n(single: '%s file', plural: '%s files', number: count, domain: 'tailwind-base') }}"></div>
+
+{# === FAIL 18: {% set %} now, |format later. A KNOWN false positive, pinned so it stays visible rather than being rediscovered: the rule has no cross-expression data flow, and the stored value may never be formatted at all. Silence with a Layer-A comment (§ 3) naming this case. === #}
+{% set plural_label = _n('%s set', '%s sets', count, 'tailwind-base') %}
+<div aria-label="{{ plural_label|format(count) }}"></div>
+
+{# === FAIL 19: a plural passed as a REPLACEMENT VALUE to format — its own placeholder is not substituted by that call, so the outer |format must NOT cover it. This is the shape proving markCoveredByFormat starts at the operand, not at the filter. === #}
+<div aria-label="{{ 'outer %s'|format(_nx('%s day', '%s days', count, 'tailwind-base', 'tailwind-base')) }}"></div>

@@ -1,7 +1,12 @@
 # Core
 
-The CMS-neutral rules. Every project loads this set. Twig rules that make no assumption about WordPress or Drupal live here.
+The CMS-neutral Twig rules. Every project loads this set. 39 rules live in `Twig/Rules/`.
 
-Rules load by PSR-4 autoload under `Parisek\LintKit\Core\`. A rule does not read project files. The project config passes its options in (issue portadesign/tailwind-base#874, R13.14 to R13.16).
+A rule does not read project files. The only files it reads are the linted template and the `.yaml` next to it. Everything else arrives as an option from the preset (`Parisek\LintKit\Twig\Preset`).
 
-Status: planned. The first audit sorts every existing rule into Core, WordPress or Drupal.
+Two rules take an option:
+
+- `UnguardedOutputRule($extraRoots)`: template roots that never need a guard. The WordPress set adds `site`.
+- `LinkFieldShapeRule($componentRoots)`: the directories that hold `<id>/<id>.yaml` definitions.
+
+Each rule documents its predicate in its docblock, and has a fixture in `tests/Fixtures/Twig/`.

@@ -1,0 +1,104 @@
+{# Fixture for ProseOnRichTextRule. Each comment block describes the expected behavior. #}
+{# Every print is wrapped in {% if %} so UnguardedOutputRule does not cross-fire. #}
+{# Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/prose-on-rich-text-fixture.twig #}
+
+{# === FAIL: bare paragraph wrapping rich-text print, no prose === #}
+{% if content.description %}<p class="text-base">{{ content.description|typography }}</p>{% endif %}
+
+{# === FAIL: nested wrapper without prose anywhere up the chain === #}
+{% if content.perex %}
+	<section class="container">
+		<div class="grid grid-cols-2">
+			<article>
+				<p>{{ content.perex|typography }}</p>
+			</article>
+		</div>
+	</section>
+{% endif %}
+
+{# === FAIL: text field without prose === #}
+{% if content.text %}
+	<div class="bg-white">
+		<div class="my-8">
+			{{ content.text|typography }}
+		</div>
+	</div>
+{% endif %}
+
+{# === FAIL: body field without prose === #}
+{% if content.body %}
+	<main class="px-4">
+		{{ content.body|typography }}
+	</main>
+{% endif %}
+
+{# === FAIL: article_text field without prose === #}
+{% if content.article_text %}
+	<aside>
+		{{ content.article_text|typography }}
+	</aside>
+{% endif %}
+
+{# === OK: direct prose wrapper === #}
+{% if content.description %}<div class="prose">{{ content.description|typography }}</div>{% endif %}
+
+{# === OK: prose with Tailwind utilities === #}
+{% if content.perex %}<div class="prose mx-auto text-neutral-900">{{ content.perex|typography }}</div>{% endif %}
+
+{# === OK: prose-lg variant === #}
+{% if content.text %}<div class="prose prose-lg">{{ content.text|typography }}</div>{% endif %}
+
+{# === OK: prose on grandparent ancestor === #}
+{% if content.body %}
+	<section class="prose mx-auto">
+		<div class="my-8">
+			<p>{{ content.body|typography }}</p>
+		</div>
+	</section>
+{% endif %}
+
+{# === OK: variant-prefixed prose === #}
+{% if content.article_text %}<div class="lg:prose dark:prose-invert">{{ content.article_text|typography }}</div>{% endif %}
+
+{# === OK: short field — title is not in rich-text scope === #}
+{% if content.title %}<h1>{{ content.title|typography }}</h1>{% endif %}
+
+{# === OK: subtitle, label, name — also out of scope === #}
+{% if content.subtitle %}<p>{{ content.subtitle|typography }}</p>{% endif %}
+{% if content.label %}<span>{{ content.label|typography }}</span>{% endif %}
+{% if content.name %}<strong>{{ content.name|typography }}</strong>{% endif %}
+
+{# === OK: print with |raw filter, no |typography — out of scope === #}
+{% if content.body %}<div>{{ content.body|raw }}</div>{% endif %}
+
+{# === OK: nested item.description — not rooted at `content` === #}
+{% for item in content.items %}
+	{% if item.description %}<div>{{ item.description|typography }}</div>{% endif %}
+{% endfor %}
+
+{# === OK: heading element with font-headings — intentional inline text, not prose === #}
+{% if content.text %}<div class="font-headings font-semibold tracking-tight text-heading-md" data-hero-text>{{ content.text|typography }}</div>{% endif %}
+
+{# === OK: heading size token text-heading-* === #}
+{% if content.perex %}<h2 class="text-heading-lg font-bold">{{ content.perex|typography }}</h2>{% endif %}
+
+{# === OK: display heading token text-display-* === #}
+{% if content.description %}<h1 class="text-display-xl leading-none">{{ content.description|typography }}</h1>{% endif %}
+
+{# === OK: title token text-title-* === #}
+{% if content.text %}<p class="text-title-sm uppercase tracking-wide">{{ content.text|typography }}</p>{% endif %}
+
+{# === OK: heading class with variant prefix === #}
+{% if content.perex %}<div class="text-heading-md xl:text-heading-lg">{{ content.perex|typography }}</div>{% endif %}
+
+{# === OK: heading class with STACKED variant prefix (dark:lg:) === #}
+{% if content.perex %}<h2 class="dark:lg:text-heading-lg font-bold">{{ content.perex|typography }}</h2>{% endif %}
+
+{# === OK: bespoke fluid clamp sizing — author owns the type treatment (fellows perex pattern) === #}
+{% if content.perex %}<div class="font-medium text-[clamp(1.25rem,2.3vw,2.5rem)]/[1.2] text-tertiary-50">{{ content.perex|typography }}</div>{% endif %}
+
+{# === OK: clamp sizing with variant prefix === #}
+{% if content.text %}<div class="lg:text-[clamp(1.75rem,5.5vw,4.5rem)] leading-tight">{{ content.text|typography }}</div>{% endif %}
+
+{# === FAIL: arbitrary but NON-computed font size does not exempt — only clamp() does === #}
+{% if content.perex %}<div class="text-[18px]">{{ content.perex|typography }}</div>{% endif %}

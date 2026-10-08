@@ -18,10 +18,9 @@ Checked on a local copy: Composer resolved `^0.1` to `v0.1.0` through such an en
 
 ## One-time setup (the owner)
 
-1. Choose the licence and add the `LICENSE` file. Packagist and a public repository both need it.
-2. Submit `https://github.com/parisek/lint-kit` at packagist.org and enable the GitHub webhook.
-3. Set a tag protection rule on `v*` in the repository settings.
-4. Let the `github-actions` bot push to `main`. The `Stamp Release` workflow commits the stamped changelog directly. A branch protection rule that blocks it breaks the automatic path.
+1. Submit `https://github.com/parisek/lint-kit` at packagist.org and enable the GitHub webhook.
+2. Set a tag protection rule on `v*` in the repository settings.
+3. Let the `github-actions` bot push to `main`. The `Stamp Release` workflow commits the stamped changelog directly. A branch protection rule that blocks it breaks the automatic path.
 
 ## Prerequisites
 

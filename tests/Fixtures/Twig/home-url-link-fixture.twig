@@ -1,0 +1,47 @@
+{# Fixture for HomeUrlLinkRule — bare homeUrl homepage links. #}
+
+{# FAIL: bare homeUrl as the complete anchor href (the pre-#130 logo). #}
+<a href="{{ homeUrl }}" class="p-1.5 -m-1.5">logo</a>
+
+{# FAIL: whitespace inside the print does not change the value. #}
+<a class="block" href="{{  homeUrl  }}">home</a>
+
+{# FAIL: url: hash entry with bare homeUrl (the 404 "Go to homepage" button). #}
+{{ component_button({
+	title: 'Go to homepage',
+	url: homeUrl,
+	wrapper_classes: 'btn-primary',
+}) }}
+
+{# FAIL: href: hash entry with bare homeUrl (create_attribute link). #}
+{% set link_attributes = create_attribute({
+	href: homeUrl,
+	class: ['underline'],
+}) %}
+
+{# OK: the sanctioned homepage-link value — attribute form. #}
+<a href="{{ frontPageUrl|default(homeUrl) }}" class="p-1.5 -m-1.5">logo</a>
+
+{# OK: the sanctioned homepage-link value — hash form. #}
+{{ component_button({
+	title: 'Go to homepage',
+	url: frontPageUrl|default(homeUrl),
+}) }}
+
+{# OK: concatenation — styleguide-internal demo link, functional under the render base. #}
+<a href="{{ homeUrl ~ 'page/kontakt' }}">kontakt</a>
+
+{# OK: concatenation in a hash entry. #}
+{{ component_button({ title: 'Kontakt', url: homeUrl ~ 'page/kontakt' }) }}
+
+{# OK: non-anchor href — canonical link in a layout head. #}
+<link rel="canonical" href="{{ homeUrl }}">
+
+{# OK: homeUrl printed as content, not linked. #}
+<p>Site root: {{ homeUrl }}</p>
+
+{# OK: homeUrl as a suffix print is not the complete attribute value. #}
+<a href="{{ prefix }}{{ homeUrl }}">composed</a>
+
+{# OK: unrelated variable. #}
+<a href="{{ item.url }}">item</a>

@@ -1,0 +1,70 @@
+{# Fixture for CreateAttributeClassArrayRule. Each block describes the expected behavior. #}
+{# Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/create-attribute-class-array-fixture.twig #}
+
+{# === FAIL: single static string in array brackets === #}
+{% set attrs = create_attribute({
+	class: ['btn'],
+}) %}
+
+{# === FAIL: single static string with whitespace-separated utilities (still one array element) === #}
+{% set attrs = create_attribute({
+	class: ['btn btn-primary mt-4'],
+}) %}
+
+{# === FAIL: single variable reference (NameExpression / ContextVariable) === #}
+{% set attrs = create_attribute({
+	class: [classes],
+}) %}
+
+{# === FAIL: single dotted-path reference (GetAttrExpression) === #}
+{% set attrs = create_attribute({
+	class: [content.classes],
+}) %}
+
+{# === FAIL: single deeply-nested path reference === #}
+{% set attrs = create_attribute({
+	class: [item.wrapper.classes],
+}) %}
+
+{# === OK: bare string (already the recommended single-source form) === #}
+{% set attrs = create_attribute({
+	class: 'btn btn-primary',
+}) %}
+
+{# === OK: bare variable === #}
+{% set attrs = create_attribute({
+	class: classes,
+}) %}
+
+{# === OK: array with two static elements (composition is intentional) === #}
+{% set attrs = create_attribute({
+	class: ['btn', 'btn-primary'],
+}) %}
+
+{# === OK: array mixing static + variable (real composition) === #}
+{% set attrs = create_attribute({
+	class: ['btn', state_class],
+}) %}
+
+{# === OK: array with conditional element (compound expression) === #}
+{% set attrs = create_attribute({
+	class: [is_active ? 'is-active' : ''],
+}) %}
+
+{# === OK: array with filter chain (compound expression) === #}
+{% set attrs = create_attribute({
+	class: [classes|join(' ')],
+}) %}
+
+{# === OK: empty array (no element to inspect) === #}
+{% set attrs = create_attribute({
+	class: [],
+}) %}
+
+{# === OK: no class slot at all === #}
+{% set attrs = create_attribute({
+	id: 'foo',
+}) %}
+
+{# === OK: function call passed as variable — different positional shape === #}
+{{ create_attribute({ id: 'bar' }) }}

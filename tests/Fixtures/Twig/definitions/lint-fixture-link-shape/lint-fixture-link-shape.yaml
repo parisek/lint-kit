@@ -1,0 +1,54 @@
+# Field definitions for `LinkFieldShapeRule`'s fixture, and nothing else.
+#
+# This directory holds NO `.twig`. `ComponentParser` discovers components by
+# reading the first comment of each `.twig` file, so a definition-only
+# directory never enters the catalogue, the styleguide SPA, the `usage:` graph
+# or the fixture-coverage audit — verified by `vendor/bin/styleguide list` and
+# `tests/fields-contract.spec.js`.
+#
+# It exists because the rule reads a component's `<id>.yaml` at a fixed offset
+# from its own file, so its fixture can only exercise it through some
+# component's definition. Pointing the fixture at REAL components coupled a
+# frozen, `class: exact` fixture to the consuming project's catalogue: one project
+# had deleted `dialog` and `page-header-image` and dropped `article-list`'s
+# `link` field, so all three positive sections hit the "component has no
+# definition -> skip" path, the count fell from 3 to 0, and the rule silently
+# lost its entire coverage -- negative sections included, since those pass
+# trivially once nothing resolves.
+#
+# The fields below mirror exactly what the fixture needs, so keep them in sync
+# with it and with nothing else. A real component changing shape must never
+# again be able to disarm this rule's test.
+name: 'Lint fixture — link field shapes'
+fields:
+  link:
+    label: 'shape: link — arrives as an ACF link object'
+    role: field
+    shape: link
+    type: link
+  button:
+    label: 'shape: link — a second one, so the fixture can fire twice on distinct fields'
+    role: field
+    shape: link
+    type: link
+  url:
+    label: 'shape: url — already flattened to an href string'
+    role: field
+    shape: url
+    type: link
+  untyped_link:
+    label: 'type: link with no shape — unknowable, must never fire'
+    role: field
+    type: link
+  items:
+    label: 'Repeater whose sub-field is shape: url — pins that recursion does not over-fire'
+    role: field
+    type: repeater
+    fields:
+      title:
+        label: Title
+        type: text
+      url:
+        label: Url
+        shape: url
+        type: link

@@ -1,0 +1,63 @@
+{# === EmptyAltRule fixture =============================================
+Verifies AST-aware detection of `alt: ''` hash entries. Replaces the
+Python `empty-alt` regex.
+
+`alt: ''` is the convention for decorative images, but it is also the
+easiest accessibility mistake to make on a content image. The rule
+fires on every empty literal so the developer confirms the intent.
+
+Skip conditions inherited from the Python regex:
+- non-`alt` keys (any other hash field) — skipped
+- non-string values (variables, function calls, concat) — skipped
+- non-empty alt strings (real descriptions) — skipped
+
+Note: the double-quoted variant (`alt: ""`) would also fire the rule, but
+the project's SingleQuoteRule rejects double-quoted strings before this rule
+can even run, so a dedicated test case for that path stays out of the fixture.
+
+Run from repo root:
+
+vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/empty-alt-fixture.twig
+
+Expected: 4 warnings, 0 errors (EmptyAlt) — sections 1, 4, 6, 8
+====================================================================== #}
+
+{# 1) FAIL: bare empty single-quoted alt #}
+{% set image1 = { src: 'foo.jpg', alt: '' } %}
+
+{# 2) OK: alt with a real description #}
+{% set image2 = { src: 'foo.jpg', alt: 'A red car parked on a sunny street' } %}
+
+{# 3) OK: alt comes from a variable — assume intentional #}
+{% set image3 = { src: 'baz.jpg', alt: my_alt } %}
+
+{# 4) FAIL: empty alt inside an inline component call #}
+{{ component_picture({ src: templateUrl ~ '/images/x.jpg', alt: '' }) }}
+
+{# 5) OK: same call with descriptive alt #}
+{{ component_picture({ src: templateUrl ~ '/images/x.jpg', alt: 'Team photo at conference' }) }}
+
+{# 6) FAIL: empty alt inside a list of image objects #}
+{% set gallery = [
+	{ src: 'g1.jpg', alt: '' },
+	{ src: 'g2.jpg', alt: 'Sunset over the ocean' },
+] %}
+
+{# 7) OK: non-`alt` key with empty string — rule scope is `alt` only #}
+{% set link = { href: '/about', title: '' } %}
+
+{# 8) FAIL: nested hash deeper in a structure #}
+{% set hero = {
+	background: {
+		image: { src: templateUrl ~ '/images/hero-bg.jpg', alt: '' },
+	},
+} %}
+
+{# 9) OK: alt value comes from a function call — skipped #}
+{% set image9 = { src: 'foo.jpg', alt: get_alt_text('hero') } %}
+
+{# 10) OK: alt is the result of concatenation — skipped (BinaryConcat, not ConstantExpression) #}
+{% set image10 = { src: 'foo.jpg', alt: 'Image of ' ~ content.name } %}
+
+{# 11) OK: pattern lives inside a Twig comment — comment text isn't parsed as ArrayExpression #}
+{# example: { alt: '' } — bad pattern, but commented out #}

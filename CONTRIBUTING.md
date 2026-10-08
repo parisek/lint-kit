@@ -9,10 +9,11 @@ composer test
 
 ## Add a rule
 
-1. Decide the set: Core, WordPress or Drupal. When a rule mixes CMS-neutral and CMS-specific checks, split it or take the CMS as an option (R13.22).
-2. Put the rule under `src/<Set>/`. Name the doctrine file it enforces in the docblock.
-3. Add a test class under `tests/Unit/` with fixtures that show a pass and a fail.
-4. List the change in `CHANGELOG.md` under the set it belongs to (R13.23).
+1. Decide the set: Core, WordPress or Drupal. When a rule mixes CMS-neutral and CMS-specific checks, split it or take the CMS as an option.
+2. Put the rule under `src/<Set>/Twig/Rules/`. Name the doctrine file it enforces in the docblock.
+3. Register it in `src/Twig/Preset.php`. `PresetTest` fails when a Core rule is not registered.
+4. Add a fixture under `tests/Fixtures/` with an `Expected:` line. See `tests/Fixtures/README.md`.
+5. List the change in `CHANGELOG.md` under the set it belongs to.
 
 ## Open a pull request
 

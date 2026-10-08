@@ -1,0 +1,32 @@
+{#
+ComponentMetadataRule fixture — malformed absolute URLs for `web` and `drupal`.
+
+Both keys accept a site-relative path or an absolute http(s) URL. A value that
+only starts like a URL must still warn:
+
+1. FAIL: 'drupal' has a non-numeric port (`https://example.com:bad/path`).
+2. FAIL: 'web' has trailing text after the host (`https://example.com trailing-text`).
+
+`name`, `category` and `asana` are valid, so no other warning may fire.
+
+Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/component-metadata-url-fail-fixture.twig
+Expected: 2 warnings, 0 errors (ComponentMetadata) — sections 1, 2
+
+name: "Metadata URL fail"
+category: "Test"
+asana: "https://app.asana.com/0/0/0"
+drupal: "https://example.com:bad/path"
+web: "https://example.com trailing-text"
+#}
+{% extends '@component/component/component.twig' %}
+{% set component = {
+	name: 'metadata-url-fail',
+	id: content.wrapper_id,
+	classes: [
+		'my-16',
+		content.wrapper_classes,
+	],
+} %}
+{% block content %}
+	<p>Malformed absolute URLs above.</p>
+{% endblock %}

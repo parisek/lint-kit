@@ -27,6 +27,12 @@ jobs:
       - name: Audit dependencies for known advisories
         run: composer audit --abandoned=report
 
+      - name: composer.json is normalized
+        run: composer normalize --dry-run
+
+      - name: Static analysis (PHPStan)
+        run: composer phpstan
+
   test:
     name: PHP ${{ matrix.php }}
     runs-on: ubuntu-latest

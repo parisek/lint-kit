@@ -1,0 +1,83 @@
+{# Testing unguarded output rule - NOT styleguide #}
+<div>
+	{{ content.perex }}
+</div>
+
+{% if content.title %}
+	<h1>{{ content.title }}</h1>
+{% endif %}
+
+{% for child in content.children %}
+	<p>{{ child.description }}</p>
+{% endfor %}
+
+{% for child in content.children %}
+	{% if child.description %}
+		<p>{{ child.description }}</p>
+	{% endif %}
+{% endfor %}
+
+{# === OK: `site.*` is a builtin root — Timber global, always present on WP requests === #}
+{# Layout chrome (<html>, <meta charset>) must render unconditionally — never {% if %}-gated. #}
+<html class="no-js" {{ site.language_attributes }}>
+	<meta charset="{{ site.charset }}" />
+	<meta name="apple-mobile-web-app-title" content="{{ site.title }}" />
+</html>
+
+{# === OK: `component.*` is a builtin root — author-controlled local hash, no guard needed === #}
+{% set component = { name: 'foo', id: 'bar', tag: 'section' } %}
+<{{ component.tag }} id="{{ component.id }}" class="{{ component.classes|join(' ') }}">
+	{{ component.heading.title }}
+</{{ component.tag }}>
+
+{# === OK: derived guard — content.url checked via a set-then-if pattern === #}
+{# has_link is a bare name, not a dotted path, so it is not added to the guard stack. #}
+{# Any enclosing {% if %} branch is sufficient — no UnguardedOutput warning expected. #}
+{% set has_link = content.url is not empty %}
+{% if has_link %}
+	<a href="{{ content.url }}" class="btn btn-primary">{{ content.label }}</a>
+{% endif %}
+
+{# === OK: derived guard inside a for — bare-name {% if show %} signals intent === #}
+{% for item in content.items %}
+	{% set show = item.url is not empty %}
+	{% if show %}
+		<li class="is-active">{{ item.url }}</li>
+	{% endif %}
+{% endfor %}
+
+{# === FAIL: unrelated dotted guard does NOT cover sibling prints === #}
+{# `{% if content.image %}` guards content.image, not content.url / content.label. #}
+{% if content.image %}
+	<a href="{{ content.url }}">{{ content.label }}</a>
+{% endif %}
+
+{# === FAIL: {% else %} branch — the if's condition is falsy here, so it guards nothing === #}
+{% if content.url %}
+	<a href="{{ content.url }}">primary</a>
+{% else %}
+	<a href="{{ content.url }}">fallback</a>
+{% endif %}
+
+{# === FAIL: suggestion should point at the nearest sensible opening tag === #}
+
+{# multi-line <a> opener — suggestion should land on the <a line, skipping <span sibling #}
+<ul>
+	<span>sibling</span>
+	<a
+		href="#"
+	>
+		{{ item.title }}
+	</a>
+</ul>
+
+{# print on same line as <a> — suggestion should target that same line #}
+<li>
+	<a href="#">{{ page.title }}</a>
+</li>
+
+{# void element above print — should be skipped; suggestion should land on <p> #}
+<p>
+	<br>
+	{{ child.label }}
+</p>

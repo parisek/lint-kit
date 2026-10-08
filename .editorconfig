@@ -10,3 +10,7 @@ indent_size = 4
 
 [*.{json,yml,yaml,md}]
 indent_size = 2
+
+# Moved rules keep the tab indentation of the upstream files, so a diff against them stays readable.
+[src/**/Rules/*.php]
+indent_style = tab
