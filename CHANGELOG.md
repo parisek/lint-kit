@@ -7,3 +7,4 @@ All notable changes are listed here, grouped by rule set once rules exist. The f
 ### Added
 
 - Repository scaffold: package, rule-set folders, one guard test, CI, decision record.
+- Release by git tag: `RELEASING.md`, the `release` workflow, and `.gitattributes` that keeps development files out of `vendor/`.

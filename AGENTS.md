@@ -57,6 +57,8 @@ Everything in this repository is English, in ASD-STE100 style: one idea per sent
 
 ## Not decided yet
 
+Decided: releases are git tags, published on Packagist (RELEASING.md).
+
 - The licence. Do not add a `LICENSE` file before the owner chooses one.
 - Whether one version number is enough for the three sets (issue #874, open question 2).
 - Which existing rules mix CMS-neutral and CMS-specific checks. The audit decides.

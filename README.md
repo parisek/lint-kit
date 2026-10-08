@@ -12,4 +12,10 @@ composer install
 composer test
 ```
 
+Install in a project (after the first tag and the Packagist submission; see [`RELEASING.md`](RELEASING.md)):
+
+```bash
+ddev composer require --dev "parisek/lint-kit:^0.1"
+```
+
 Related: [`test-kit`](https://github.com/parisek/test-kit), the testing and comparison tool.
