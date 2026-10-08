@@ -9,7 +9,6 @@ use Twig\Node\Expression\ArrayExpression;
 use Twig\Node\Expression\ConstantExpression;
 use Twig\Node\Expression\FilterExpression;
 use Twig\Node\Expression\NameExpression;
-use Twig\Node\Expression\Variable\ContextVariable;
 use Twig\Node\ModuleNode;
 use Twig\Node\Node;
 use Twig\Node\PrintNode;
@@ -51,8 +50,8 @@ use TwigCsFixer\Rules\Node\AbstractNodeRule;
  *  - `{{ homeUrl }}` printed as content (outside an href) — displaying the
  *    URL is not linking to it.
  *
- * Both `NameExpression` and `ContextVariable` are matched — same
- * Twig-version compatibility pattern as `ProseOnRichTextRule`.
+ * `NameExpression` is checked alone: `ContextVariable`, the class the Twig parser creates for a
+ * variable, extends it.
  */
 final class HomeUrlLinkRule extends AbstractNodeRule
 {
@@ -135,7 +134,7 @@ final class HomeUrlLinkRule extends AbstractNodeRule
 
 	private function isBareHomeUrl(Node $expr): bool
 	{
-		if (!$expr instanceof NameExpression && !$expr instanceof ContextVariable) {
+		if (!$expr instanceof NameExpression) {
 			return false;
 		}
 

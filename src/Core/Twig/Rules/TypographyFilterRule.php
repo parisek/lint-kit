@@ -9,7 +9,6 @@ use Twig\Node\Expression\ConstantExpression;
 use Twig\Node\Expression\FilterExpression;
 use Twig\Node\Expression\GetAttrExpression;
 use Twig\Node\Expression\NameExpression;
-use Twig\Node\Expression\Variable\ContextVariable;
 use Twig\Node\Node;
 use Twig\Node\PrintNode;
 use TwigCsFixer\Rules\Node\AbstractNodeRule;
@@ -96,7 +95,7 @@ final class TypographyFilterRule extends AbstractNodeRule
 	 */
 	private function extractPath(Node $node): ?string
 	{
-		if ($node instanceof NameExpression || $node instanceof ContextVariable) {
+		if ($node instanceof NameExpression) {
 			$name = $node->getAttribute('name');
 
 			return \is_string($name) ? $name : null;

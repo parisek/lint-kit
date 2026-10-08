@@ -8,7 +8,6 @@ use Twig\Environment;
 use Twig\Node\Expression\ConstantExpression;
 use Twig\Node\Expression\GetAttrExpression;
 use Twig\Node\Expression\NameExpression;
-use Twig\Node\Expression\Variable\ContextVariable;
 use Twig\Node\ModuleNode;
 use Twig\Node\Node;
 use TwigCsFixer\Rules\Node\AbstractNodeRule;
@@ -98,7 +97,7 @@ final class WrapperClassesRule extends AbstractNodeRule
 
 	private function isContentRoot(Node $node): bool
 	{
-		if (!$node instanceof NameExpression && !$node instanceof ContextVariable) {
+		if (!$node instanceof NameExpression) {
 			return false;
 		}
 

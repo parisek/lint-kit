@@ -10,7 +10,6 @@ use Twig\Node\Expression\ConstantExpression;
 use Twig\Node\Expression\FunctionExpression;
 use Twig\Node\Expression\GetAttrExpression;
 use Twig\Node\Expression\NameExpression;
-use Twig\Node\Expression\Variable\ContextVariable;
 use Twig\Node\Node;
 use TwigCsFixer\Rules\Node\AbstractNodeRule;
 
@@ -30,7 +29,7 @@ use TwigCsFixer\Rules\Node\AbstractNodeRule;
  *  - First positional argument must be an `ArrayExpression`.
  *  - Locate the `class` hash entry; value must be an `ArrayExpression`.
  *  - If the inner array has exactly 1 element AND that element is one of
- *    {`ConstantExpression` (string), `NameExpression`, `ContextVariable`,
+ *    {`ConstantExpression` (string), `NameExpression` (which includes `ContextVariable`),
  *    `GetAttrExpression`} → fire.
  *
  * Skipped silently:
@@ -97,7 +96,6 @@ final class CreateAttributeClassArrayRule extends AbstractNodeRule
 		}
 
 		if ($only instanceof NameExpression
-			|| $only instanceof ContextVariable
 			|| $only instanceof GetAttrExpression
 		) {
 			$this->addWarning(
