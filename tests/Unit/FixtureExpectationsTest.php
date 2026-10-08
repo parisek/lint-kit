@@ -21,7 +21,7 @@ use PHPUnit\Framework\TestCase;
  */
 final class FixtureExpectationsTest extends TestCase
 {
-    private const ROOTS = ['Twig', 'WordPress/Twig'];
+    private const ROOTS = ['Twig'];
 
     /**
      * @return array<string, array{string}>
@@ -73,6 +73,31 @@ final class FixtureExpectationsTest extends TestCase
         $result = TwigLint::run($file);
 
         $this->assertArrayHasKey('exit', $result);
+    }
+
+    /**
+     * The fixtures without an `Expected:` line are an opt-out, and an opt-out must be visible. This
+     * pins the exact set (tests/Fixtures/unverified.txt): a new fixture without a line, or a lost
+     * line on an old one, fails here and names the file. The floor stops a change that empties the
+     * fixtures AND the list from satisfying the parity check with two empty sets.
+     */
+    public function testTheFixturesWithoutAnExpectationAreExactlyTheDeclaredOnes(): void
+    {
+        $base = \dirname(__DIR__) . '/Fixtures/';
+        $declared = array_values(array_filter(array_map(
+            static fn (string $line): string => trim((string) preg_replace('/#.*$/', '', $line)),
+            file($base . 'unverified.txt', \FILE_IGNORE_NEW_LINES) ?: []
+        )));
+        sort($declared);
+
+        $actual = array_map(
+            static fn (array $row): string => substr($row[0], \strlen($base)),
+            array_values(self::withoutExpectation())
+        );
+        sort($actual);
+
+        $this->assertSame($declared, $actual, 'The fixtures without an Expected: line changed. A new fixture needs one; if the opt-out is deliberate, list it in tests/Fixtures/unverified.txt.');
+        $this->assertGreaterThanOrEqual(30, \count(self::withExpectation()), 'Expected 30 or more fixtures with an Expected: line.');
     }
 
     /**

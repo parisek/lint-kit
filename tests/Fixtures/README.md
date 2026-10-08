@@ -9,14 +9,14 @@ Expected: 4 warnings, 0 errors (EmptyAlt) — sections 1, 4, 6, 8
 `tests/Unit/FixtureExpectationsTest.php` runs the linter on each fixture and compares the count **for that rule**. A total count is wrong, because rules overlap on purpose.
 
 - `Twig/`: fixtures of the Core rules. `Twig/definitions/` holds component definitions for `LinkFieldShapeRule`.
-- `WordPress/Twig/`: fixtures of the WordPress set.
 - Some fixtures are path-sensitive (`metadata-yaml-parses-*`, `macro/`, `templates/`). Keep their folder structure.
 - `when project.slug=tailwind-base` in an expectation means the count holds for that theme name. The test config uses it.
 - Run one by hand: `vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/<file>`.
 
 ## Fixtures without an `Expected:` line
 
-39 fixtures carry the line. These 15 do not. The test only checks that they lint without a crash:
+39 fixtures carry the line. These 15 do not. The test only checks that they lint without a crash, and `unverified.txt` pins the exact set: a new fixture without a line, or a lost line, fails the test and names the file.
+
 
 `arbitrary-px`, `button-type`, `component-button-type`, `create-attribute-class-array`, `dump`, `home-url-link`, `prose-on-rich-text`, `space-xy`, `stretched-link-relative`, `transition-all`, `unguarded`, `unique-id-required` (and its three `ok` variants).
 

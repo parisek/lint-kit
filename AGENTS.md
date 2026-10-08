@@ -31,8 +31,8 @@ There is no `composer.lock` in git. CI resolves the latest tree the constraints 
 
 | Path | Holds |
 | --- | --- |
-| `src/Core/Twig/Rules/` | CMS-neutral Twig rules (39). |
-| `src/WordPress/Twig/Rules/` | Opt-in Twig rules for WordPress (1). |
+| `src/Core/Twig/Rules/` | CMS-neutral Twig rules (40). |
+| `src/WordPress/` | Opt-in set for WordPress. No rule class yet; the preset adds the `site` root. |
 | `src/Drupal/` | Opt-in rules for Drupal. Empty today. |
 | `src/Twig/Preset.php` | Builds the `twig-cs-fixer` config of a project. The only public entry point. |
 | `tests/Fixtures/` | The fixtures. Each one states its expected outcome. |
@@ -62,6 +62,7 @@ There is no `composer.lock` in git. CI resolves the latest tree the constraints 
 
 - `UnguardedOutputRule`: `site` left the built-in roots and became the `$extraRoots` option, because `site` is a Timber global.
 - `LinkFieldShapeRule`: definitions are searched in the `$componentRoots` given, not by offsets from `__DIR__`, because inside `vendor/` those offsets point into the package.
+- `TranslationThemeNameRule`: moved from the WordPress set to Core in `0.2.0`. A Drupal project follows the same `_x('text', '<theme>', '<theme>')` convention, so the rule applies there. The preset registers it when `themeName` is given.
 - `UniqueIdRequiredRule`, `TranslationPluralMissingFormatRule`: the messages no longer name one CMS. The logic is unchanged.
 - Namespaces changed from `PortaDesign\TwigCsFixer\Rules` to `Parisek\LintKit\<Set>\Twig\Rules`. Class names did not change.
 - Client names in docblocks and fixtures became neutral words, because this repository is public.
@@ -87,4 +88,4 @@ Decided: releases are git tags, published on Packagist (RELEASING.md).
 
 - Whether one version number is enough for the three sets (issue #874, open question 2).
 - The coding standard (`phpcs`). The moved rules use tabs. A standard needs a decision first.
-- Whether the 15 fixtures without an `Expected:` line get one.
+- Whether the 15 fixtures without an `Expected:` line get one. They are pinned in `tests/Fixtures/unverified.txt`; shorten the list by giving a fixture its line.
