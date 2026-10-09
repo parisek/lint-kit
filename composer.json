@@ -17,7 +17,7 @@
     "support": {
         "issues": "https://github.com/parisek/lint-kit/issues",
         "source": "https://github.com/parisek/lint-kit",
-        "security": "https://github.com/parisek/lint-kit/security/policy"
+        "security": "https://github.com/parisek/lint-kit/blob/main/SECURITY.md"
     },
     "require": {
         "php": ">=8.3",
