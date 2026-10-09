@@ -2,12 +2,7 @@
 
 ## Supported versions
 
-This package is pre-1.0. Only the latest release gets security fixes.
-
-| Version | Supported |
-| --- | --- |
-| Latest release (0.x) | Yes |
-| Older releases | No |
+Only the latest release gets security fixes. That is the newest minor release of the newest major version. Older releases get no fixes. To receive a fix, update to the latest release.
 
 ## Report a vulnerability
 
