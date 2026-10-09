@@ -4,8 +4,12 @@
 
 ```bash
 composer install
-composer test
+composer test                   # PHPUnit: fixture suite and preset tests
+composer phpstan                # level 5, with a baseline
+composer normalize --dry-run    # composer.json is normalized
 ```
+
+CI runs these commands, `composer validate --no-check-publish` and `composer audit`. Run them before you push.
 
 ## Add a rule
 
@@ -21,6 +25,18 @@ composer test
 2. Open a draft pull request assigned to `parisek`. Use a Conventional Commit as the title.
 3. Wait for CI. Fix a failure or explain it.
 4. The owner reviews and merges.
+
+Pull requests are squash-merged. The title becomes the commit subject, so GitHub appends `(#N)`. The `pr-title` workflow checks that the title is a Conventional Commit (`feat`, `fix`, `docs`, `chore`, `refactor`, `perf`, `test`, `ci`, `build`, `revert`).
+
+Add a line under `[Unreleased]` in `CHANGELOG.md` for each change that affects a rule. Records of decisions live in `docs/adr/`.
+
+## Security
+
+Report a vulnerability in private. Do not open a public issue. See `SECURITY.md`.
+
+## AI agents
+
+`AGENTS.md` holds the rules for AI coding assistants.
 
 ## Public repository
 
