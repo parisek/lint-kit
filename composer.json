@@ -5,6 +5,20 @@
         "MIT"
     ],
     "type": "library",
+    "keywords": [
+        "twig",
+        "phpstan",
+        "lint",
+        "twig-cs-fixer",
+        "wordpress",
+        "drupal"
+    ],
+    "homepage": "https://github.com/parisek/lint-kit",
+    "support": {
+        "issues": "https://github.com/parisek/lint-kit/issues",
+        "source": "https://github.com/parisek/lint-kit",
+        "security": "https://github.com/parisek/lint-kit/blob/main/SECURITY.md"
+    },
     "require": {
         "php": ">=8.3",
         "symfony/yaml": "^6.4 || ^7.0 || ^8.0",

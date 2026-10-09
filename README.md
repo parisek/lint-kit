@@ -1,5 +1,11 @@
 # lint-kit
 
+[![Packagist Version](https://img.shields.io/packagist/v/parisek/lint-kit)](https://packagist.org/packages/parisek/lint-kit)
+[![PHP](https://img.shields.io/packagist/php-v/parisek/lint-kit)](https://packagist.org/packages/parisek/lint-kit)
+[![CI](https://github.com/parisek/lint-kit/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/parisek/lint-kit/actions/workflows/ci.yml)
+[![Twig](https://img.shields.io/badge/Twig-3.30%2B-bacf29?logo=twig&logoColor=white)](https://twig.symfony.com)
+[![License: MIT](https://img.shields.io/packagist/l/parisek/lint-kit)](LICENSE)
+
 Status: **alpha**. The Twig rules are in. The PHPStan rules follow.
 
 One Composer package for the Twig and PHPStan lint rules, shared by WordPress and Drupal projects: a CMS-neutral core and one opt-in rule set per CMS.

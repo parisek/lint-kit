@@ -10,6 +10,7 @@
 /AGENTS.md          export-ignore
 /CLAUDE.md          export-ignore
 /CONTRIBUTING.md    export-ignore
+/SECURITY.md        export-ignore
 /RELEASING.md       export-ignore
 /CHANGELOG.md       export-ignore
 /phpstan.neon       export-ignore
