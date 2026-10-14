@@ -4,6 +4,10 @@ All notable changes are listed here, grouped by rule set once rules exist. The f
 
 ## [Unreleased]
 
+### Added
+
+- `CountUpNumberInHtmlRule` (Core): warns when a `gsap-animation="count-up"` element ships no number, or only the start value, in its source text. A client that does not run the animation reads that text. portadesign/tailwind-base#920.
+
 ## [0.2.0] — 2026-10-08
 
 ### Changed

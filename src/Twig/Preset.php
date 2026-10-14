@@ -199,6 +199,7 @@ final class Preset
             new Core\HardcodedI18nAttributeRule(),
             new Core\HardcodedI18nArrayKeyRule(),
             new Core\TransitionAllRule(),
+            new Core\CountUpNumberInHtmlRule(),
             new Core\ArbitraryPxRule(),
             new Core\UniqueIdRequiredRule(),
             new Core\LinkFieldShapeRule($componentRoots),
