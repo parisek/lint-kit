@@ -1,7 +1,7 @@
 {# Fixture for CountUpNumberInHtmlRule. Each comment block describes the expected behavior. #}
 {# Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/count-up-number-in-html-fixture.twig #}
 {#
-Expected: 8 warnings, 0 errors (CountUpNumberInHtml) — sections 1 to 5, then the three FAIL cases after the OK block
+Expected: 10 warnings, 0 errors (CountUpNumberInHtml) — sections 1 to 5, then the three FAIL cases after the OK block
 #}
 
 {# === FAIL 1: literal 0 === #}
@@ -71,3 +71,9 @@ Expected: 8 warnings, 0 errors (CountUpNumberInHtml) — sections 1 to 5, then t
 
 {# === FAIL 8: digits in a nested tag's attributes are not the number === #}
 <div gsap-animation="count-up" gsap-end="78"><span class="text-5xl w-10"></span></div>
+
+{# === FAIL 9: attribute names are case-insensitive in HTML === #}
+<DIV GSAP-ANIMATION="count-up" gsap-end="78">0</DIV>
+
+{# === FAIL 10: the attribute sits inside a Twig condition === #}
+<div {% if animate %}gsap-animation="count-up"{% endif %} gsap-end="78">0</div>

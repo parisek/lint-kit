@@ -57,7 +57,7 @@ final class CountUpNumberInHtmlRule extends AbstractRule
 
 		foreach ($matches as $match) {
 			$attributes = $match[2][0];
-			if (!preg_match('/gsap-animation\s*=\s*(["\']?)count-up\1(?=[\s\/>]|$)/', $attributes)) {
+			if (!preg_match('/gsap-animation\s*=\s*(["\']?)count-up\1(?=[\s\/>\x00]|$)/i', $attributes)) {
 				continue;
 			}
 
