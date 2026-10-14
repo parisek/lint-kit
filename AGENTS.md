@@ -31,7 +31,7 @@ There is no `composer.lock` in git. CI resolves the latest tree the constraints 
 
 | Path | Holds |
 | --- | --- |
-| `src/Core/Twig/Rules/` | CMS-neutral Twig rules (40). |
+| `src/Core/Twig/Rules/` | CMS-neutral Twig rules (41). |
 | `src/WordPress/` | Opt-in set for WordPress. No rule class yet; the preset adds the `site` root. |
 | `src/Drupal/` | Opt-in rules for Drupal. Empty today. |
 | `src/Twig/Preset.php` | Builds the `twig-cs-fixer` config of a project. The only public entry point. |

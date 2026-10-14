@@ -1,0 +1,79 @@
+{# Fixture for CountUpNumberInHtmlRule. Each comment block describes the expected behavior. #}
+{# Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/count-up-number-in-html-fixture.twig #}
+{#
+Expected: 10 warnings, 0 errors (CountUpNumberInHtml) — sections 1 to 5, then the three FAIL cases after the OK block
+#}
+
+{# === FAIL 1: literal 0 === #}
+<div gsap-animation="count-up" gsap-end="78">0</div>
+
+{# === FAIL 2: empty element === #}
+<span gsap-animation="count-up" gsap-end="78"></span>
+
+{# === FAIL 3: literal 0 with Twig output in the attributes only === #}
+<div
+	class="text-5xl"
+	gsap-animation="count-up"
+	gsap-end="{{ item.number }}"
+	gsap-suffix="+"
+>
+	0
+</div>
+
+{# === FAIL 4: literal equals a non-zero start value === #}
+<div gsap-animation="count-up" gsap-start="10" gsap-end="78">10</div>
+
+{# === FAIL 5: no digit in the text === #}
+<div gsap-animation="count-up" gsap-end="78">—</div>
+
+{# === OK: Twig output in the element === #}
+<div gsap-animation="count-up" gsap-end="{{ item.number }}">{{ item.number }}</div>
+
+{# === OK: Twig filter and suffix, as the number is written in the source === #}
+<div
+	gsap-animation="count-up"
+	gsap-end="{{ item.number.first }}"
+	gsap-suffix="{{ item.number.second|default('') }}"
+>
+	{{- item.number.first|number_format(0, ',', ' ') ~ item.number.second|default('') -}}
+</div>
+
+{# === OK: a literal that is not the start value === #}
+<div gsap-animation="count-up" gsap-end="78">78</div>
+<div gsap-animation="count-up" gsap-end="100" gsap-suffix=" tis.+">100 tis.+</div>
+
+{# === OK: other animations are not in scope === #}
+<div gsap-animation="reveal">0</div>
+
+{# === OK: a Twig tag in the element is trusted === #}
+<div gsap-animation="count-up" gsap-end="{{ n }}">{% if n %}{{ n }}{% else %}0{% endif %}</div>
+
+{# === OK: lookalike attribute value === #}
+<div gsap-animation="count-up-slow">0</div>
+
+{# === OK: decimal start value differs from the printed number (1.5 is not 15) === #}
+<div gsap-animation="count-up" gsap-start="1.5" gsap-end="15">15</div>
+
+{# === OK: an HTML comment is not rendered === #}
+<!-- <div gsap-animation="count-up">0</div> -->
+
+{# === OK: markup-looking text inside script is not an element === #}
+<script>const tpl = '<div gsap-animation="count-up">0</div>';</script>
+
+{# === OK: nested element carrying the number === #}
+<div gsap-animation="count-up" gsap-end="78"><span>78</span></div>
+
+{# === FAIL 6: unquoted attribute value === #}
+<div gsap-animation=count-up gsap-end="78">0</div>
+
+{# === FAIL 7: verbatim body is literal text, not Twig output === #}
+<div gsap-animation="count-up" gsap-end="78">{% verbatim %}{{ n }}{% endverbatim %}</div>
+
+{# === FAIL 8: digits in a nested tag's attributes are not the number === #}
+<div gsap-animation="count-up" gsap-end="78"><span class="text-5xl w-10"></span></div>
+
+{# === FAIL 9: attribute names are case-insensitive in HTML === #}
+<DIV GSAP-ANIMATION="count-up" gsap-end="78">0</DIV>
+
+{# === FAIL 10: the attribute sits inside a Twig condition === #}
+<div {% if animate %}gsap-animation="count-up"{% endif %} gsap-end="78">0</div>

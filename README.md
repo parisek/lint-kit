@@ -12,7 +12,7 @@ One Composer package for the Twig and PHPStan lint rules, shared by WordPress an
 
 | Set | Twig rules | PHPStan rules |
 | --- | --- | --- |
-| `core` | 40 | 0 |
+| `core` | 41 | 0 |
 | `wordpress` | 0 (adds the `site` root) | planned (7) |
 | `drupal` | 0 (empty today) | 0 |
 
