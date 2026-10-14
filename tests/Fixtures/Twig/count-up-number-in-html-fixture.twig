@@ -1,7 +1,7 @@
 {# Fixture for CountUpNumberInHtmlRule. Each comment block describes the expected behavior. #}
 {# Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/count-up-number-in-html-fixture.twig #}
 {#
-Expected: 5 warnings, 0 errors (CountUpNumberInHtml) — sections 1 to 5
+Expected: 8 warnings, 0 errors (CountUpNumberInHtml) — sections 1 to 5, then the three FAIL cases after the OK block
 #}
 
 {# === FAIL 1: literal 0 === #}
@@ -50,3 +50,24 @@ Expected: 5 warnings, 0 errors (CountUpNumberInHtml) — sections 1 to 5
 
 {# === OK: lookalike attribute value === #}
 <div gsap-animation="count-up-slow">0</div>
+
+{# === OK: decimal start value differs from the printed number (1.5 is not 15) === #}
+<div gsap-animation="count-up" gsap-start="1.5" gsap-end="15">15</div>
+
+{# === OK: an HTML comment is not rendered === #}
+<!-- <div gsap-animation="count-up">0</div> -->
+
+{# === OK: markup-looking text inside script is not an element === #}
+<script>const tpl = '<div gsap-animation="count-up">0</div>';</script>
+
+{# === OK: nested element carrying the number === #}
+<div gsap-animation="count-up" gsap-end="78"><span>78</span></div>
+
+{# === FAIL 6: unquoted attribute value === #}
+<div gsap-animation=count-up gsap-end="78">0</div>
+
+{# === FAIL 7: verbatim body is literal text, not Twig output === #}
+<div gsap-animation="count-up" gsap-end="78">{% verbatim %}{{ n }}{% endverbatim %}</div>
+
+{# === FAIL 8: digits in a nested tag's attributes are not the number === #}
+<div gsap-animation="count-up" gsap-end="78"><span class="text-5xl w-10"></span></div>
