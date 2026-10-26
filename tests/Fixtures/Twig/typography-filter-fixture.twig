@@ -9,11 +9,15 @@ overloaded across menu/nav/styleguide-chrome metadata loops where
 
 Fields: title, perex, subtitle, description, label, name, heading
 
+A print inside an HTML attribute value is never flagged: an attribute
+is a technical or accessibility string, and |typography (non-breaking
+spaces, smart quotes) does not belong there (twig.md § Translations).
+
 Run from repo root:
 
 vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/typography-filter-fixture.twig
 
-Expected: 4 warnings, 0 errors (TypographyFilter) — sections 1, 3, 5, 14
+Expected: 6 warnings, 0 errors (TypographyFilter) — sections 1, 3, 5, 14, 19, 21 (22 to 25 are look-alikes that stay OK)
 ====================================================================== #}
 
 {# 1) FAIL: bare content.title #}
@@ -62,3 +66,33 @@ Expected: 4 warnings, 0 errors (TypographyFilter) — sections 1, 3, 5, 14
 
 {# 15) OK: print is inside a Twig comment — comment text isn't parsed as PrintNode #}
 {# example: {{ content.title }} — bad pattern, but commented out #}
+
+{# 16) OK: a print inside an attribute value — typography does not belong there #}
+{% if content.title %}<a href="#" title="{{ content.title }}">Link</a>{% endif %}
+
+{# 17) OK: accessibility attribute #}
+{% if content.label %}<button type="button" aria-label="{{ content.label }}"></button>{% endif %}
+
+{# 18) OK: the print is part of a longer attribute value #}
+{% if content.name %}<input type="text" id="input-{{ content.name }}">{% endif %}
+
+{# 19) FAIL: same line, one print in an attribute and one in text — only the text one warns #}
+{% if content.title %}<a href="#" title="{{ content.title }}">{{ content.title }}</a>{% endif %}
+
+{# 20) OK: single-quoted attribute value #}
+{% if content.title %}<a href="#" title='{{ content.title }}'>Link</a>{% endif %}
+
+{# 21) FAIL: the attribute closes before the print, so the print is text #}
+{% if content.perex %}<p class="mt-3">{{ content.perex }}</p>{% endif %}
+
+{# 22) OK: whitespace around the equals sign is still an attribute value #}
+{% if content.title %}<a href="#" title = "{{ content.title }}">Link</a>{% endif %}
+
+{# 23) OK: an attribute closed and a second one opened before the print #}
+{% if content.title %}<a href="#" class="x" data-title='{{ content.title }}'>Link</a>{% endif %}
+
+{# 24) OK: an attribute value that itself contains `='` before the print #}
+{% if content.title %}<div title="type='hero' {{ content.title }}"></div>{% endif %}
+
+{# 25) OK: quotes inside a Twig expression earlier in the value do not close it #}
+{% if content.title %}<div title="{{ content.kind ? 'a' : 'b' }} {{ content.title }}"></div>{% endif %}
