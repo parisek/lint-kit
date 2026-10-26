@@ -18,7 +18,7 @@ Run from repo root:
 
 vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/typography-filter-fixture.twig
 
-Expected: 10 warnings, 0 errors (TypographyFilter) — sections 1, 3, 4, 5, 14, 19, 21, 24, 26, 28
+Expected: 11 warnings, 0 errors (TypographyFilter) — sections 1, 3, 4, 5, 14, 19, 21, 24, 26, 28, 32
 ====================================================================== #}
 
 {# 1) FAIL: bare content.title #}
@@ -115,3 +115,9 @@ Expected: 10 warnings, 0 errors (TypographyFilter) — sections 1, 3, 4, 5, 14, 
 
 {# 31) OK: a content loop variable inside an attribute value #}
 {% for item in content.items %}<a href="#" title="{{ item.title }}">Link</a>{% endfor %}
+
+{# 32) FAIL: the else branch of an inner loop sees the outer content item, not the inner target #}
+{% for item in content.items %}{% for item in navigation %}{% else %}{{ item.title }}{% endfor %}{% endfor %}
+
+{# 33) OK: the else branch of an inner content loop sees the outer menu item #}
+{% for item in menu.items %}{% for item in content.items %}{% else %}{{ item.title }}{% endfor %}{% endfor %}

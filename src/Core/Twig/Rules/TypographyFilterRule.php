@@ -9,6 +9,7 @@ use Twig\Node\Expression\ConstantExpression;
 use Twig\Node\Expression\FilterExpression;
 use Twig\Node\Expression\GetAttrExpression;
 use Twig\Node\Expression\NameExpression;
+use Twig\Node\ForElseNode;
 use Twig\Node\ForNode;
 use Twig\Node\ModuleNode;
 use Twig\Node\Node;
@@ -31,7 +32,8 @@ use TwigCsFixer\Rules\Node\AbstractNodeRule;
  * markup into plain labels, so a loop over anything else stays out of scope.
  * Deciding by the sequence rather than by the name is what lets the rule see
  * the CMS loops without reaching into those. An inner loop that reuses the
- * name over another sequence shadows the outer one for its body.
+ * name over another sequence shadows the outer one for its body, but not
+ * for its `{% else %}` branch, where the loop target is not bound.
  *
  * A print inside an HTML attribute value is skipped. An attribute is a
  * technical or accessibility string (`title`, `aria-label`, an `id` built
@@ -91,6 +93,15 @@ final class TypographyFilterRule extends AbstractNodeRule
 				'name' => $this->loopVariable($node),
 				'content' => $this->isContentRooted($node->getNode('seq')),
 			];
+
+			return $node;
+		}
+
+		// `{% else %}` runs when the sequence is empty, so the loop target is
+		// not bound there and an outer variable of that name is. The branch is
+		// the loop's last child, so the top entry is its own loop.
+		if ($node instanceof ForElseNode && [] !== $this->loops) {
+			$this->loops[\count($this->loops) - 1]['name'] = null;
 
 			return $node;
 		}
