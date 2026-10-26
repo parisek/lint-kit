@@ -4,6 +4,10 @@ All notable changes are listed here, grouped by rule set once rules exist. The f
 
 ## [Unreleased]
 
+### Fixed
+
+- `TypographyFilterRule` (Core) no longer reports a print inside a quoted HTML attribute value (`title="{{ content.title }}"`, `aria-label=…`, `id="input-{{ content.name }}"`). An attribute is a technical or accessibility string, and `|typography` does not belong there. The rule reads the template line for this, because the AST carries no HTML context; a value that opens on an earlier line than the print is still reported. #12.
+
 ## [0.3.0] — 2026-10-14
 
 ### Added

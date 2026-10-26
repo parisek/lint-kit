@@ -9,6 +9,7 @@ use Twig\Node\Expression\ConstantExpression;
 use Twig\Node\Expression\FilterExpression;
 use Twig\Node\Expression\GetAttrExpression;
 use Twig\Node\Expression\NameExpression;
+use Twig\Node\ModuleNode;
 use Twig\Node\Node;
 use Twig\Node\PrintNode;
 use TwigCsFixer\Rules\Node\AbstractNodeRule;
@@ -30,6 +31,17 @@ use TwigCsFixer\Rules\Node\AbstractNodeRule;
  * can always reach for `|typography` themselves or alias the loop
  * variable (`{% set content = item %}`) when they want coverage.
  *
+ * A print inside an HTML attribute value is skipped. An attribute is a
+ * technical or accessibility string (`title`, `aria-label`, an `id` built
+ * from a field), and `|typography` does not belong there: its non-breaking
+ * spaces and smart quotes would reach a screen reader or a selector. The rule
+ * reads the template's own line for this, because the AST carries no HTML
+ * context. One known gap: an attribute value that opens on an earlier line
+ * than the print is not seen, and the print is reported.
+ *
+ * Enforces `theme/typography.md` § `|typography` Filter and the prose vs
+ * technical split in `theme/twig.md` § Translations (tailwind-base).
+ *
  * Any filter (including `|raw`, `|escape`) silences the warning — same
  * lenient policy as the Python `missing-typography` regex it replaces.
  * Only bare `GetAttrExpression` top expressions of length 2 trigger;
@@ -39,10 +51,31 @@ final class TypographyFilterRule extends AbstractNodeRule
 {
 	private const ROOTS = ['content', 'heading'];
 
+	/**
+	 * Lines of the template being linted, 1-indexed via `$lines[$n - 1]`.
+	 *
+	 * @var list<string>
+	 */
+	private array $lines = [];
+
+	/**
+	 * How many prints of a path this rule has seen on a line so far, so the
+	 * n-th print maps to the n-th `{{ path }}` span on that line.
+	 *
+	 * @var array<string, int>
+	 */
+	private array $seen = [];
+
 	private const FIELDS = ['title', 'perex', 'subtitle', 'description', 'label', 'name', 'heading'];
 
 	public function enterNode(Node $node, Environment $env): Node
 	{
+		if ($node instanceof ModuleNode) {
+			$this->readTemplate($node);
+
+			return $node;
+		}
+
 		if (!$node instanceof PrintNode) {
 			return $node;
 		}
@@ -79,6 +112,10 @@ final class TypographyFilterRule extends AbstractNodeRule
 			return $node;
 		}
 
+		if ($this->printsInsideAttribute($node, $path)) {
+			return $node;
+		}
+
 		$this->addWarning(
 			\sprintf('Consider adding |typography filter to .%s', $parts[1]),
 			$node,
@@ -86,6 +123,68 @@ final class TypographyFilterRule extends AbstractNodeRule
 		);
 
 		return $node;
+	}
+
+	private function readTemplate(ModuleNode $node): void
+	{
+		$this->lines = [];
+		$this->seen = [];
+
+		$code = $node->getSourceContext()?->getCode() ?? '';
+		if ('' !== $code) {
+			$this->lines = explode("\n", $code);
+		}
+	}
+
+	/**
+	 * Whether this print sits inside a quoted HTML attribute value.
+	 *
+	 * Finds every `{{ path }}` span on the print's line and takes the one this
+	 * print is, by order of appearance. When the line cannot be read, or the
+	 * span cannot be found (the print is written in a shape this scan does not
+	 * match), the answer is no and the rule reports as before.
+	 */
+	private function printsInsideAttribute(PrintNode $node, string $path): bool
+	{
+		$lineNumber = $node->getTemplateLine();
+		$line = $this->lines[$lineNumber - 1] ?? null;
+		if (null === $line) {
+			return false;
+		}
+
+		$pattern = '/\{\{-?~?\s*' . preg_quote($path, '/') . '\s*-?~?\}\}/';
+		if (false === preg_match_all($pattern, $line, $matches, \PREG_OFFSET_CAPTURE)) {
+			return false;
+		}
+
+		$key = $lineNumber . ':' . $path;
+		$index = $this->seen[$key] ?? 0;
+		$this->seen[$key] = $index + 1;
+
+		$span = $matches[0][$index] ?? null;
+		if (null === $span) {
+			return false;
+		}
+
+		return $this->opensAttributeValue(substr($line, 0, $span[1]));
+	}
+
+	/**
+	 * Whether text ending at a print leaves a quoted attribute value open:
+	 * the last `="` or `='` before it has no matching closing quote.
+	 */
+	private function opensAttributeValue(string $before): bool
+	{
+		$double = strrpos($before, '="');
+		$single = strrpos($before, "='");
+		if (false === $double && false === $single) {
+			return false;
+		}
+
+		$at = max(false === $double ? -1 : $double, false === $single ? -1 : $single);
+		$quote = $before[$at + 1];
+
+		return !str_contains(substr($before, $at + 2), $quote);
 	}
 
 	/**
