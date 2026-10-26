@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Parisek\LintKit\Core\Twig\Rules;
 
 use Twig\Environment;
+use Twig\Node\Expression\AbstractExpression;
 use Twig\Node\Expression\ConstantExpression;
 use Twig\Node\Expression\FilterExpression;
 use Twig\Node\Expression\GetAttrExpression;
@@ -14,6 +15,7 @@ use Twig\Node\ForNode;
 use Twig\Node\ModuleNode;
 use Twig\Node\Node;
 use Twig\Node\PrintNode;
+use Twig\Node\SetNode;
 use TwigCsFixer\Rules\Node\AbstractNodeRule;
 
 /**
@@ -34,7 +36,9 @@ use TwigCsFixer\Rules\Node\AbstractNodeRule;
  * the CMS loops without reaching into those. An inner loop that reuses the
  * name over another sequence shadows the outer one for its body, but not
  * for its `{% else %}` branch, where the loop target is not bound. A loop
- * key shadows an outer name too, and is never content itself.
+ * key shadows an outer name too, and is never content itself. A `set` that
+ * reassigns a loop's name inside the loop rebinds it by the new value.
+ * Not tracked: `{% with %}` scopes, and `set` on a name no loop binds.
  *
  * A print inside an HTML attribute value is skipped. An attribute is a
  * technical or accessibility string (`title`, `aria-label`, an `id` built
@@ -103,6 +107,15 @@ final class TypographyFilterRule extends AbstractNodeRule
 				$names[$value] = $content;
 			}
 			$this->loops[] = $names;
+
+			return $node;
+		}
+
+		// `{% set item = … %}` inside a loop rebinds the loop's own name for the
+		// rest of the body: it is content when the new value is. A name the
+		// loops do not bind is left to the fixed roots, as before.
+		if ($node instanceof SetNode) {
+			$this->rebind($node);
 
 			return $node;
 		}
@@ -206,6 +219,50 @@ final class TypographyFilterRule extends AbstractNodeRule
 		}
 
 		return $this->isContentRoot(explode('.', $path)[0]);
+	}
+
+	private function rebind(SetNode $node): void
+	{
+		if (true === $node->getAttribute('capture')) {
+			return;
+		}
+
+		$names = $this->listOf($node->getNode('names'));
+		$values = $this->listOf($node->getNode('values'));
+		foreach ($names as $index => $target) {
+			$name = $target->hasAttribute('name') ? $target->getAttribute('name') : null;
+			if (!\is_string($name)) {
+				continue;
+			}
+			for ($i = \count($this->loops) - 1; $i >= 0; --$i) {
+				if (\array_key_exists($name, $this->loops[$i])) {
+					$value = $values[$index] ?? null;
+					$this->loops[$i][$name] = null !== $value && $this->isContentRooted($value);
+
+					break;
+				}
+			}
+		}
+	}
+
+	/**
+	 * A `set` stores one name or value as the node itself and several as its
+	 * children.
+	 *
+	 * @return list<Node>
+	 */
+	private function listOf(Node $node): array
+	{
+		if ($node->hasAttribute('name') || $node instanceof AbstractExpression) {
+			return [$node];
+		}
+
+		$list = [];
+		foreach ($node as $child) {
+			$list[] = $child;
+		}
+
+		return $list;
 	}
 
 	private function targetName(ForNode $node, string $target): ?string
