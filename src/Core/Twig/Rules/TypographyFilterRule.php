@@ -255,19 +255,56 @@ final class TypographyFilterRule extends AbstractNodeRule
 	}
 
 	/**
-	 * Whether text ending at a print leaves a quoted attribute value open:
-	 * the last `=` followed by a quote (whitespace allowed on both sides of
-	 * the `=`) has no matching closing quote after it.
+	 * Whether text ending at a print leaves a quoted attribute value open.
+	 *
+	 * Scans from the last tag start on the line (`<` and a letter), or from
+	 * the line start when the tag opened on an earlier line, and tracks the
+	 * quote state: `=`, optional whitespace and a quote open a value, the same
+	 * quote closes it, and a `>` outside a value closes the tag. Twig tags
+	 * earlier on the line are blanked first, so a quote inside
+	 * `{{ a ? 'b' : 'c' }}` does not count.
 	 */
 	private function opensAttributeValue(string $before): bool
 	{
-		if (false === preg_match_all('/=\s*(["\'])/', $before, $matches, \PREG_OFFSET_CAPTURE) || [] === $matches[1]) {
-			return false;
+		$text = (string) preg_replace_callback(
+			'/\{\{.*?\}\}|\{%.*?%\}/s',
+			static fn (array $m): string => str_repeat('x', \strlen($m[0])),
+			$before,
+		);
+
+		$start = 0;
+		if (preg_match_all('/<[a-zA-Z]/', $text, $tags, \PREG_OFFSET_CAPTURE) > 0) {
+			$start = $tags[0][\count($tags[0]) - 1][1];
 		}
 
-		[$quote, $at] = $matches[1][\count($matches[1]) - 1];
+		$quote = null;
+		$length = \strlen($text);
+		for ($i = $start; $i < $length; ++$i) {
+			$char = $text[$i];
+			if (null !== $quote) {
+				if ($char === $quote) {
+					$quote = null;
+				}
 
-		return !str_contains(substr($before, $at + 1), $quote);
+				continue;
+			}
+			if ('>' === $char) {
+				return false;
+			}
+			if ('=' !== $char) {
+				continue;
+			}
+			$j = $i + 1;
+			while ($j < $length && ctype_space($text[$j])) {
+				++$j;
+			}
+			if ($j < $length && ('"' === $text[$j] || "'" === $text[$j])) {
+				$quote = $text[$j];
+				$i = $j;
+			}
+		}
+
+		return null !== $quote;
 	}
 
 	/**

@@ -18,7 +18,7 @@ Run from repo root:
 
 vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/typography-filter-fixture.twig
 
-Expected: 11 warnings, 0 errors (TypographyFilter) — sections 1, 3, 4, 5, 14, 19, 21, 24, 26, 28, 32
+Expected: 11 warnings, 0 errors (TypographyFilter) — sections 1, 3, 4, 5, 14, 19, 21, 26, 28, 30, 34 (22 to 25 are look-alikes that stay OK)
 ====================================================================== #}
 
 {# 1) FAIL: bare content.title #}
@@ -92,32 +92,38 @@ Expected: 11 warnings, 0 errors (TypographyFilter) — sections 1, 3, 4, 5, 14, 
 {# 23) OK: an attribute closed and a second one opened before the print #}
 {% if content.title %}<a href="#" class="x" data-title='{{ content.title }}'>Link</a>{% endif %}
 
-{# 24) FAIL: loop variable over heading.* #}
+{# 24) OK: an attribute value that itself contains `='` before the print #}
+{% if content.title %}<div title="type='hero' {{ content.title }}"></div>{% endif %}
+
+{# 25) OK: quotes inside a Twig expression earlier in the value do not close it #}
+{% if content.title %}<div title="{{ content.kind ? 'a' : 'b' }} {{ content.title }}"></div>{% endif %}
+
+{# 26) FAIL: loop variable over heading.* #}
 {% for link in heading.links %}{{ link.label }}{% endfor %}
 
-{# 25) OK: a loop over something that is not content (a menu) stays out of scope #}
+{# 27) OK: a loop over something that is not content (a menu) stays out of scope #}
 {% for item in menu.items %}{{ item.title }}{% endfor %}
 
-{# 26) FAIL: nested loop — the inner sequence is rooted at a content loop variable #}
+{# 28) FAIL: nested loop — the inner sequence is rooted at a content loop variable #}
 {% for row in content.rows %}{% for cell in row.cells %}{{ cell.label }}{% endfor %}{% endfor %}
 
-{# 27) OK: an inner loop that reuses the name over a non-content sequence shadows it #}
+{# 29) OK: an inner loop that reuses the name over a non-content sequence shadows it #}
 {% for item in content.items %}{% for item in navigation %}{{ item.title }}{% endfor %}{% endfor %}
 
-{# 28) FAIL: a filtered sequence is still rooted at content #}
+{# 30) FAIL: a filtered sequence is still rooted at content #}
 {% for item in content.items|slice(0, 3) %}{{ item.name }}{% endfor %}
 
-{# 29) OK: the loop variable carries a filter #}
+{# 31) OK: the loop variable carries a filter #}
 {% for item in content.items %}{{ item.title|typography }}{% endfor %}
 
-{# 30) OK: a field outside the text-field list, even on a content loop variable #}
+{# 32) OK: a field outside the text-field list, even on a content loop variable #}
 {% for item in content.items %}{{ item.value }}{% endfor %}
 
-{# 31) OK: a content loop variable inside an attribute value #}
+{# 33) OK: a content loop variable inside an attribute value #}
 {% for item in content.items %}<a href="#" title="{{ item.title }}">Link</a>{% endfor %}
 
-{# 32) FAIL: the else branch of an inner loop sees the outer content item, not the inner target #}
+{# 34) FAIL: the else branch of an inner loop sees the outer content item, not the inner target #}
 {% for item in content.items %}{% for item in navigation %}{% else %}{{ item.title }}{% endfor %}{% endfor %}
 
-{# 33) OK: the else branch of an inner content loop sees the outer menu item #}
+{# 35) OK: the else branch of an inner content loop sees the outer menu item #}
 {% for item in menu.items %}{% for item in content.items %}{% else %}{{ item.title }}{% endfor %}{% endfor %}
