@@ -3,9 +3,10 @@ Verifies AST-aware detection of `{{ <root>.<field> }}` printed without
 any `|filter` (typography being the canonical one). Mirrors the Python
 `missing-typography` regex.
 
-Roots: content, heading (item is intentionally out of scope — it's
-overloaded across menu/nav/styleguide-chrome metadata loops where
-|typography would inject markup into plain labels)
+Roots: content, heading, and any loop variable whose sequence is rooted
+at one of them (`{% for item in content.items %}`), however deep the
+nesting. A loop over anything else (a menu, styleguide chrome) is still
+out of scope, so `item` from such a loop is never flagged.
 
 Fields: title, perex, subtitle, description, label, name, heading
 
@@ -17,7 +18,7 @@ Run from repo root:
 
 vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/typography-filter-fixture.twig
 
-Expected: 6 warnings, 0 errors (TypographyFilter) — sections 1, 3, 5, 14, 19, 21 (22 to 25 are look-alikes that stay OK)
+Expected: 13 warnings, 0 errors (TypographyFilter) — sections 1, 3, 4, 5, 14, 19, 21, 26, 28, 30, 34, 39, 40 (22 to 25 are look-alikes that stay OK)
 ====================================================================== #}
 
 {# 1) FAIL: bare content.title #}
@@ -29,7 +30,7 @@ Expected: 6 warnings, 0 errors (TypographyFilter) — sections 1, 3, 5, 14, 19, 
 {# 3) FAIL: content.perex without filter #}
 {% if content.perex %}{{ content.perex }}{% endif %}
 
-{# 4) OK: `item` is out of scope — overloaded for non-CMS metadata loops #}
+{# 4) FAIL: loop variable over content.items is CMS content too #}
 {% for item in content.items %}{% if item.title %}{{ item.title }}{% endif %}{% endfor %}
 
 {# 5) FAIL: heading.subtitle without filter #}
@@ -96,3 +97,48 @@ Expected: 6 warnings, 0 errors (TypographyFilter) — sections 1, 3, 5, 14, 19, 
 
 {# 25) OK: quotes inside a Twig expression earlier in the value do not close it #}
 {% if content.title %}<div title="{{ content.kind ? 'a' : 'b' }} {{ content.title }}"></div>{% endif %}
+
+{# 26) FAIL: loop variable over heading.* #}
+{% for link in heading.links %}{{ link.label }}{% endfor %}
+
+{# 27) OK: a loop over something that is not content (a menu) stays out of scope #}
+{% for item in menu.items %}{{ item.title }}{% endfor %}
+
+{# 28) FAIL: nested loop — the inner sequence is rooted at a content loop variable #}
+{% for row in content.rows %}{% for cell in row.cells %}{{ cell.label }}{% endfor %}{% endfor %}
+
+{# 29) OK: an inner loop that reuses the name over a non-content sequence shadows it #}
+{% for item in content.items %}{% for item in navigation %}{{ item.title }}{% endfor %}{% endfor %}
+
+{# 30) FAIL: a filtered sequence is still rooted at content #}
+{% for item in content.items|slice(0, 3) %}{{ item.name }}{% endfor %}
+
+{# 31) OK: the loop variable carries a filter #}
+{% for item in content.items %}{{ item.title|typography }}{% endfor %}
+
+{# 32) OK: a field outside the text-field list, even on a content loop variable #}
+{% for item in content.items %}{{ item.value }}{% endfor %}
+
+{# 33) OK: a content loop variable inside an attribute value #}
+{% for item in content.items %}<a href="#" title="{{ item.title }}">Link</a>{% endfor %}
+
+{# 34) FAIL: the else branch of an inner loop sees the outer content item, not the inner target #}
+{% for item in content.items %}{% for item in navigation %}{% else %}{{ item.title }}{% endfor %}{% endfor %}
+
+{# 35) OK: the else branch of an inner content loop sees the outer menu item #}
+{% for item in menu.items %}{% for item in content.items %}{% else %}{{ item.title }}{% endfor %}{% endfor %}
+
+{# 36) OK: a loop key named like a root shadows that root for the body #}
+{% for content, item in menu %}{{ content.title }}{% endfor %}
+
+{# 37) OK: a loop key shadows an outer content loop variable of the same name #}
+{% for item in content.items %}{% for item, link in navigation %}{{ item.title }}{% endfor %}{% endfor %}
+
+{# 38) OK: a content loop target reassigned to something else is no longer content #}
+{% for item in content.items %}{% set item = menu_item %}{{ item.title }}{% endfor %}
+
+{# 39) FAIL: a loop target reassigned from content is content #}
+{% for item in menu.items %}{% set item = content.hero %}{{ item.title }}{% endfor %}
+
+{# 40) FAIL: a conditional set does not rebind — the item may still be content #}
+{% for item in content.items %}{% if item.hidden %}{% set item = menu_item %}{% endif %}{{ item.title }}{% endfor %}
