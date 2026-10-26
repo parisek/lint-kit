@@ -33,7 +33,8 @@ use TwigCsFixer\Rules\Node\AbstractNodeRule;
  * Deciding by the sequence rather than by the name is what lets the rule see
  * the CMS loops without reaching into those. An inner loop that reuses the
  * name over another sequence shadows the outer one for its body, but not
- * for its `{% else %}` branch, where the loop target is not bound.
+ * for its `{% else %}` branch, where the loop target is not bound. A loop
+ * key shadows an outer name too, and is never content itself.
  *
  * A print inside an HTML attribute value is skipped. An attribute is a
  * technical or accessibility string (`title`, `aria-label`, an `id` built
@@ -56,10 +57,12 @@ final class TypographyFilterRule extends AbstractNodeRule
 	private const ROOTS = ['content', 'heading'];
 
 	/**
-	 * One entry per open `{% for %}`: the loop variable and whether its
-	 * sequence is rooted at CMS content. The innermost entry for a name wins.
+	 * One entry per open `{% for %}`: the names it binds, each with whether it
+	 * is CMS content. The value target is content when the sequence is; the
+	 * key target never is, but it still shadows an outer name. The innermost
+	 * entry that binds a name wins.
 	 *
-	 * @var list<array{name: ?string, content: bool}>
+	 * @var list<array<string, bool>>
 	 */
 	private array $loops = [];
 
@@ -89,10 +92,17 @@ final class TypographyFilterRule extends AbstractNodeRule
 		}
 
 		if ($node instanceof ForNode) {
-			$this->loops[] = [
-				'name' => $this->loopVariable($node),
-				'content' => $this->isContentRooted($node->getNode('seq')),
-			];
+			$content = $this->isContentRooted($node->getNode('seq'));
+			$names = [];
+			$key = $this->targetName($node, 'key_target');
+			if (null !== $key) {
+				$names[$key] = false;
+			}
+			$value = $this->targetName($node, 'value_target');
+			if (null !== $value) {
+				$names[$value] = $content;
+			}
+			$this->loops[] = $names;
 
 			return $node;
 		}
@@ -101,7 +111,7 @@ final class TypographyFilterRule extends AbstractNodeRule
 		// not bound there and an outer variable of that name is. The branch is
 		// the loop's last child, so the top entry is its own loop.
 		if ($node instanceof ForElseNode && [] !== $this->loops) {
-			$this->loops[\count($this->loops) - 1]['name'] = null;
+			$this->loops[\count($this->loops) - 1] = [];
 
 			return $node;
 		}
@@ -171,8 +181,8 @@ final class TypographyFilterRule extends AbstractNodeRule
 	private function isContentRoot(string $name): bool
 	{
 		for ($i = \count($this->loops) - 1; $i >= 0; --$i) {
-			if ($this->loops[$i]['name'] === $name) {
-				return $this->loops[$i]['content'];
+			if (\array_key_exists($name, $this->loops[$i])) {
+				return $this->loops[$i][$name];
 			}
 		}
 
@@ -198,13 +208,13 @@ final class TypographyFilterRule extends AbstractNodeRule
 		return $this->isContentRoot(explode('.', $path)[0]);
 	}
 
-	private function loopVariable(ForNode $node): ?string
+	private function targetName(ForNode $node, string $target): ?string
 	{
-		if (!$node->hasNode('value_target')) {
+		if (!$node->hasNode($target)) {
 			return null;
 		}
 
-		$name = $node->getNode('value_target')->getAttribute('name');
+		$name = $node->getNode($target)->getAttribute('name');
 
 		return \is_string($name) ? $name : null;
 	}

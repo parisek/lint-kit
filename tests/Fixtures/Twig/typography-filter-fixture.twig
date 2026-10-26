@@ -127,3 +127,9 @@ Expected: 11 warnings, 0 errors (TypographyFilter) — sections 1, 3, 4, 5, 14, 
 
 {# 35) OK: the else branch of an inner content loop sees the outer menu item #}
 {% for item in menu.items %}{% for item in content.items %}{% else %}{{ item.title }}{% endfor %}{% endfor %}
+
+{# 36) OK: a loop key named like a root shadows that root for the body #}
+{% for content, item in menu %}{{ content.title }}{% endfor %}
+
+{# 37) OK: a loop key shadows an outer content loop variable of the same name #}
+{% for item in content.items %}{% for item, link in navigation %}{{ item.title }}{% endfor %}{% endfor %}
