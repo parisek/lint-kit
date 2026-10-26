@@ -4,6 +4,10 @@ All notable changes are listed here, grouped by rule set once rules exist. The f
 
 ## [Unreleased]
 
+### Changed
+
+- `TypographyFilterRule` (Core) also reports a loop variable whose sequence is rooted at `content` or `heading`, or at such a loop variable: `{% for item in content.items %}{{ item.title }}{% endfor %}` now warns. The rule decides by the sequence, not by the name, so a loop over a menu or styleguide chrome stays out of scope, and an inner loop that reuses the name over another sequence shadows the outer one. Expect new warnings in an existing project. #13.
+
 ### Fixed
 
 - `TypographyFilterRule` (Core) no longer reports a print inside a quoted HTML attribute value (`title="{{ content.title }}"`, `aria-label=…`, `id="input-{{ content.name }}"`). An attribute is a technical or accessibility string, and `|typography` does not belong there. The rule reads the template line for this, because the AST carries no HTML context; a value that opens on an earlier line than the print is still reported. #12.

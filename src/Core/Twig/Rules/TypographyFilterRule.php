@@ -9,6 +9,7 @@ use Twig\Node\Expression\ConstantExpression;
 use Twig\Node\Expression\FilterExpression;
 use Twig\Node\Expression\GetAttrExpression;
 use Twig\Node\Expression\NameExpression;
+use Twig\Node\ForNode;
 use Twig\Node\ModuleNode;
 use Twig\Node\Node;
 use Twig\Node\PrintNode;
@@ -22,14 +23,15 @@ use TwigCsFixer\Rules\Node\AbstractNodeRule;
  *   - `<field>` is one of the canonical text fields (title, perex, …),
  *   - the print expression has no filter applied at all.
  *
- * `item` is intentionally excluded from ROOTS: in this codebase `item` is
- * overloaded across menu loops, navigation entries, and styleguide-chrome
- * metadata listings (component name labels, badges) where `|typography`
- * would inject unwanted markup into plain labels. False positives on a
- * warning rule are a worse UX than a few missed suggestions inside
- * genuine `{% for item in content.items %}` CMS loops — those authors
- * can always reach for `|typography` themselves or alias the loop
- * variable (`{% set content = item %}`) when they want coverage.
+ * A loop variable counts as a root when its sequence is rooted at one:
+ * `{% for item in content.items %}` makes `item.title` CMS content, and so
+ * does `cell` in `{% for cell in row.cells %}` inside it. The name `item`
+ * itself carries no meaning. It is overloaded across menu loops, navigation
+ * entries and styleguide-chrome listings, where `|typography` would inject
+ * markup into plain labels, so a loop over anything else stays out of scope.
+ * Deciding by the sequence rather than by the name is what lets the rule see
+ * the CMS loops without reaching into those. An inner loop that reuses the
+ * name over another sequence shadows the outer one for its body.
  *
  * A print inside an HTML attribute value is skipped. An attribute is a
  * technical or accessibility string (`title`, `aria-label`, an `id` built
@@ -52,6 +54,14 @@ final class TypographyFilterRule extends AbstractNodeRule
 	private const ROOTS = ['content', 'heading'];
 
 	/**
+	 * One entry per open `{% for %}`: the loop variable and whether its
+	 * sequence is rooted at CMS content. The innermost entry for a name wins.
+	 *
+	 * @var list<array{name: ?string, content: bool}>
+	 */
+	private array $loops = [];
+
+	/**
 	 * Lines of the template being linted, 1-indexed via `$lines[$n - 1]`.
 	 *
 	 * @var list<string>
@@ -72,6 +82,15 @@ final class TypographyFilterRule extends AbstractNodeRule
 	{
 		if ($node instanceof ModuleNode) {
 			$this->readTemplate($node);
+
+			return $node;
+		}
+
+		if ($node instanceof ForNode) {
+			$this->loops[] = [
+				'name' => $this->loopVariable($node),
+				'content' => $this->isContentRooted($node->getNode('seq')),
+			];
 
 			return $node;
 		}
@@ -108,7 +127,7 @@ final class TypographyFilterRule extends AbstractNodeRule
 			return $node;
 		}
 
-		if (!\in_array($parts[0], self::ROOTS, true) || !\in_array($parts[1], self::FIELDS, true)) {
+		if (!$this->isContentRoot($parts[0]) || !\in_array($parts[1], self::FIELDS, true)) {
 			return $node;
 		}
 
@@ -125,10 +144,65 @@ final class TypographyFilterRule extends AbstractNodeRule
 		return $node;
 	}
 
+	public function leaveNode(Node $node, Environment $env): Node
+	{
+		if ($node instanceof ForNode) {
+			array_pop($this->loops);
+		}
+
+		return $node;
+	}
+
+	/**
+	 * Whether a bare name refers to CMS content here: a fixed root, or the
+	 * innermost open loop variable of that name when its sequence is content.
+	 */
+	private function isContentRoot(string $name): bool
+	{
+		for ($i = \count($this->loops) - 1; $i >= 0; --$i) {
+			if ($this->loops[$i]['name'] === $name) {
+				return $this->loops[$i]['content'];
+			}
+		}
+
+		return \in_array($name, self::ROOTS, true);
+	}
+
+	/**
+	 * Whether a loop sequence is rooted at CMS content. Filters are peeled
+	 * (`content.items|slice(0, 3)` is still content); a sequence that is not a
+	 * plain property path is not.
+	 */
+	private function isContentRooted(Node $seq): bool
+	{
+		while ($seq instanceof FilterExpression) {
+			$seq = $seq->getNode('node');
+		}
+
+		$path = $this->extractPath($seq);
+		if (null === $path) {
+			return false;
+		}
+
+		return $this->isContentRoot(explode('.', $path)[0]);
+	}
+
+	private function loopVariable(ForNode $node): ?string
+	{
+		if (!$node->hasNode('value_target')) {
+			return null;
+		}
+
+		$name = $node->getNode('value_target')->getAttribute('name');
+
+		return \is_string($name) ? $name : null;
+	}
+
 	private function readTemplate(ModuleNode $node): void
 	{
 		$this->lines = [];
 		$this->seen = [];
+		$this->loops = [];
 
 		$code = $node->getSourceContext()?->getCode() ?? '';
 		if ('' !== $code) {
