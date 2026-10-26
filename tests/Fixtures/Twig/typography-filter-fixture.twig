@@ -17,7 +17,7 @@ Run from repo root:
 
 vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/typography-filter-fixture.twig
 
-Expected: 6 warnings, 0 errors (TypographyFilter) — sections 1, 3, 5, 14, 19, 21 (22 and 23 are look-alikes that stay OK)
+Expected: 6 warnings, 0 errors (TypographyFilter) — sections 1, 3, 5, 14, 19, 21 (22 to 25 are look-alikes that stay OK)
 ====================================================================== #}
 
 {# 1) FAIL: bare content.title #}
@@ -90,3 +90,9 @@ Expected: 6 warnings, 0 errors (TypographyFilter) — sections 1, 3, 5, 14, 19, 
 
 {# 23) OK: an attribute closed and a second one opened before the print #}
 {% if content.title %}<a href="#" class="x" data-title='{{ content.title }}'>Link</a>{% endif %}
+
+{# 24) OK: an attribute value that itself contains `='` before the print #}
+{% if content.title %}<div title="type='hero' {{ content.title }}"></div>{% endif %}
+
+{# 25) OK: quotes inside a Twig expression earlier in the value do not close it #}
+{% if content.title %}<div title="{{ content.kind ? 'a' : 'b' }} {{ content.title }}"></div>{% endif %}
