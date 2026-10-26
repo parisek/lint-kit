@@ -245,20 +245,18 @@ final class TypographyFilterRule extends AbstractNodeRule
 
 	/**
 	 * Whether text ending at a print leaves a quoted attribute value open:
-	 * the last `="` or `='` before it has no matching closing quote.
+	 * the last `=` followed by a quote (whitespace allowed on both sides of
+	 * the `=`) has no matching closing quote after it.
 	 */
 	private function opensAttributeValue(string $before): bool
 	{
-		$double = strrpos($before, '="');
-		$single = strrpos($before, "='");
-		if (false === $double && false === $single) {
+		if (false === preg_match_all('/=\s*(["\'])/', $before, $matches, \PREG_OFFSET_CAPTURE) || [] === $matches[1]) {
 			return false;
 		}
 
-		$at = max(false === $double ? -1 : $double, false === $single ? -1 : $single);
-		$quote = $before[$at + 1];
+		[$quote, $at] = $matches[1][\count($matches[1]) - 1];
 
-		return !str_contains(substr($before, $at + 2), $quote);
+		return !str_contains(substr($before, $at + 1), $quote);
 	}
 
 	/**
