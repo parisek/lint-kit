@@ -12,6 +12,7 @@ use Twig\Node\Expression\GetAttrExpression;
 use Twig\Node\Expression\NameExpression;
 use Twig\Node\ForElseNode;
 use Twig\Node\ForNode;
+use Twig\Node\IfNode;
 use Twig\Node\ModuleNode;
 use Twig\Node\Node;
 use Twig\Node\PrintNode;
@@ -37,8 +38,10 @@ use TwigCsFixer\Rules\Node\AbstractNodeRule;
  * name over another sequence shadows the outer one for its body, but not
  * for its `{% else %}` branch, where the loop target is not bound. A loop
  * key shadows an outer name too, and is never content itself. A `set` that
- * reassigns a loop's name inside the loop rebinds it by the new value.
- * Not tracked: `{% with %}` scopes, and `set` on a name no loop binds.
+ * reassigns a loop's name inside the loop rebinds it by the new value,
+ * unless the `set` sits inside an `{% if %}` within the loop: it may not run,
+ * so the earlier binding stands. Not tracked: `{% with %}` scopes, and `set`
+ * on a name no loop binds.
  *
  * A print inside an HTML attribute value is skipped. An attribute is a
  * technical or accessibility string (`title`, `aria-label`, an `id` built
@@ -69,6 +72,17 @@ final class TypographyFilterRule extends AbstractNodeRule
 	 * @var list<array<string, bool>>
 	 */
 	private array $loops = [];
+
+	/**
+	 * Open `{% if %}` depth, and the depth each open loop started at. A `set`
+	 * rebinds a loop's name only at the loop's own depth: inside a branch it
+	 * may not run, so the earlier binding stands.
+	 *
+	 * @var list<int>
+	 */
+	private array $loopDepths = [];
+
+	private int $ifDepth = 0;
 
 	/**
 	 * Lines of the template being linted, 1-indexed via `$lines[$n - 1]`.
@@ -107,6 +121,7 @@ final class TypographyFilterRule extends AbstractNodeRule
 				$names[$value] = $content;
 			}
 			$this->loops[] = $names;
+			$this->loopDepths[] = $this->ifDepth;
 
 			return $node;
 		}
@@ -116,6 +131,12 @@ final class TypographyFilterRule extends AbstractNodeRule
 		// loops do not bind is left to the fixed roots, as before.
 		if ($node instanceof SetNode) {
 			$this->rebind($node);
+
+			return $node;
+		}
+
+		if ($node instanceof IfNode) {
+			++$this->ifDepth;
 
 			return $node;
 		}
@@ -182,6 +203,11 @@ final class TypographyFilterRule extends AbstractNodeRule
 	{
 		if ($node instanceof ForNode) {
 			array_pop($this->loops);
+			array_pop($this->loopDepths);
+		}
+
+		if ($node instanceof IfNode) {
+			--$this->ifDepth;
 		}
 
 		return $node;
@@ -236,6 +262,9 @@ final class TypographyFilterRule extends AbstractNodeRule
 			}
 			for ($i = \count($this->loops) - 1; $i >= 0; --$i) {
 				if (\array_key_exists($name, $this->loops[$i])) {
+					if ($this->loopDepths[$i] !== $this->ifDepth) {
+						break;
+					}
 					$value = $values[$index] ?? null;
 					$this->loops[$i][$name] = null !== $value && $this->isContentRooted($value);
 
@@ -281,6 +310,8 @@ final class TypographyFilterRule extends AbstractNodeRule
 		$this->lines = [];
 		$this->seen = [];
 		$this->loops = [];
+		$this->loopDepths = [];
+		$this->ifDepth = 0;
 
 		$code = $node->getSourceContext()?->getCode() ?? '';
 		if ('' !== $code) {
