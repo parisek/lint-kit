@@ -1,7 +1,7 @@
 {# Fixture for JsonEncodeHtmlAttrRule. Each block describes the expected behavior. #}
 {# Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/json-encode-html-attr-fixture.twig #}
 {# Scoping: rule fires on |json_encode used inside PrintNode or ArrayExpression value, unless escape contract is satisfied. Two safe shapes: |json_encode|e('html_attr'), or |json_encode(<flags including JSON_HEX_QUOT>)|raw. #}
-{# Expected: 7 warnings, 0 errors (JsonEncodeHtmlAttr) — one per FAIL block #}
+{# Expected: 8 warnings, 0 errors (JsonEncodeHtmlAttr) — one per FAIL block #}
 
 {# === FAIL × 1: bare |json_encode in raw HTML attribute === #}
 <div data-config="{{ payload|json_encode }}">A</div>
@@ -61,3 +61,17 @@
 {# Known limitation: |json_encode in any PrintNode (e.g. JSON-LD <script>) WILL fire — #}
 {# the rule cannot distinguish "print inside HTML attribute" from "print as <script> body". #}
 {# Such non-attribute prints are silenced per Layer A with reason. #}
+
+{# === OK: inside a <script> body the output is JavaScript, not an attribute === #}
+<script>
+	window.cfg = {{ payload|json_encode|raw }};
+	{% if payload.mode in ['a', 'b'] %}
+	window.mode = window.mode || {{ payload.mode|json_encode|raw }};
+	{% endif %}
+</script>
+
+{# === FAIL × 1: an attribute of the <script> tag itself is still an attribute === #}
+<script data-config="{{ payload|json_encode|raw }}"></script>
+
+{# === OK: after </script> the walker is back in HTML; this safe form stays OK === #}
+<div data-config="{{ payload|json_encode|e('html_attr') }}">R</div>

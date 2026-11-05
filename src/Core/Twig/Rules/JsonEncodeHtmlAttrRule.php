@@ -13,6 +13,7 @@ use Twig\Node\Expression\FunctionExpression;
 use Twig\Node\ModuleNode;
 use Twig\Node\Node;
 use Twig\Node\PrintNode;
+use Twig\Node\TextNode;
 use TwigCsFixer\Rules\Node\AbstractNodeRule;
 
 /**
@@ -64,6 +65,13 @@ use TwigCsFixer\Rules\Node\AbstractNodeRule;
  *  - **Custom flag combinations without `JSON_HEX_QUOT`** that happen to
  *    be safe by accident → false positive. Disable per Layer A with a
  *    reason (`twig-cs-fixer.md` § 3).
+ *  - **Script context is skipped.** Inside the body of a `<script>` element the
+ *    output is JavaScript, not an attribute: `{{ x|json_encode|raw }}` is the
+ *    correct form there, and PHP's default flags already escape `/`, so a
+ *    value cannot close the element. The rule tracks the template text in
+ *    document order and skips a print that sits after an unclosed
+ *    `<script …>` tag. A print inside the `<script …>` tag itself (an
+ *    attribute of the script element) is still checked.
  *  - **`_x()`-only translation payloads** are doctrinally allowed to use
  *    bare `|json_encode|raw` (see `create-attribute.md`); this carve-out
  *    lives in doctrine, not in the rule. Layer A disable per call site.
@@ -76,12 +84,16 @@ final class JsonEncodeHtmlAttrRule extends AbstractNodeRule
 	private const ESCAPE_STRATEGY = 'html_attr';
 	private const WARNING_MESSAGE = "|json_encode in HTML attribute context needs |e('html_attr') (or json_encode flag JSON_HEX_QUOT) — unescaped quotes break out of the attribute";
 
+	/** True while the walker is inside the body of a `<script>` element. */
+	private bool $inScript = false;
+
 	public function enterNode(Node $node, Environment $env): Node
 	{
 		if (!$node instanceof ModuleNode) {
 			return $node;
 		}
 
+		$this->inScript = false;
 		$this->walkNode($node, [], false);
 
 		return $node;
@@ -102,7 +114,18 @@ final class JsonEncodeHtmlAttrRule extends AbstractNodeRule
 	 */
 	private function walkNode(Node $node, array $wrappingFilters, bool $inAttrContext): void
 	{
+		if ($node instanceof TextNode) {
+			$this->inScript = $this->scriptStateAfter((string) $node->getAttribute('data'), $this->inScript);
+
+			return;
+		}
+
 		if ($node instanceof PrintNode) {
+			if ($this->inScript) {
+				// JavaScript, not an attribute: nothing here can break out of one.
+				return;
+			}
+
 			// Print output sinks into raw template HTML — attribute context.
 			$this->walkNode($node->getNode('expr'), [], true);
 
@@ -157,6 +180,26 @@ final class JsonEncodeHtmlAttrRule extends AbstractNodeRule
 				$this->walkNode($child, [], $inAttrContext);
 			}
 		}
+	}
+
+	/**
+	 * Whether the template is inside a `<script>` body after this text. The
+	 * last opening or closing tag in the text decides; an opening tag counts
+	 * only once its `>` is in the text, so a print inside the tag's own
+	 * attributes stays in attribute context.
+	 */
+	private function scriptStateAfter(string $text, bool $before): bool
+	{
+		$open = strripos($text, '<script');
+		$close = strripos($text, '</script');
+		if (false === $open && false === $close) {
+			return $before;
+		}
+		if (false !== $close && (false === $open || $close > $open)) {
+			return false;
+		}
+
+		return false !== strpos(substr($text, (int) $open), '>');
 	}
 
 	/**
