@@ -4,6 +4,10 @@ All notable changes are listed here, grouped by rule set once rules exist. The f
 
 ## [Unreleased]
 
+### Fixed
+
+- `JsonEncodeHtmlAttrRule` (Core) no longer reports a print inside the body of a `<script>` element. The output there is JavaScript, not an attribute, so `{{ x|json_encode|raw }}` is the correct form. The rule tracks the template text in document order; a print inside the `<script …>` tag's own attributes is still reported.
+
 ## [0.4.0] — 2026-10-26
 
 ### Changed
