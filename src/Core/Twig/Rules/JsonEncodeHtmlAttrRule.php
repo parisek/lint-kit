@@ -11,8 +11,11 @@ use Twig\Node\Expression\Filter\RawFilter;
 use Twig\Node\Expression\FilterExpression;
 use Twig\Node\Expression\FunctionExpression;
 use Twig\Node\ModuleNode;
+use Twig\Node\BlockNode;
+use Twig\Node\MacroNode;
 use Twig\Node\Node;
 use Twig\Node\PrintNode;
+use Twig\Node\TextNode;
 use TwigCsFixer\Rules\Node\AbstractNodeRule;
 
 /**
@@ -46,7 +49,16 @@ use TwigCsFixer\Rules\Node\AbstractNodeRule;
  *      `ArrayExpression` value (the `create_attribute` payload shape).
  *      `{% set foo = obj|json_encode %}` for non-attribute purposes is
  *      conservatively skipped.
- *   4. Otherwise, fire.
+ *   4. **Script body skip.** A `PrintNode` between `<script …>` and
+ *      `</script>` is JavaScript or JSON, not an attribute, so it is
+ *      skipped. The AST carries no HTML context, so the walker reads the
+ *      raw `TextNode` data in document order and keeps the state of the
+ *      last `<script …>` or `</script>` tag it saw. A print inside the
+ *      attributes of the `<script` tag itself (`<script data-x="{{ … }}">`)
+ *      is still checked: the opening tag is not closed yet. Default
+ *      `json_encode` escapes `/`, so the value cannot close the element
+ *      with `</script>`.
+ *   5. Otherwise, fire.
  *
  * Walking the chain — Twig nests outer filters as parents
  * (`x|json_encode|e('html_attr')` is `e(html_attr)` wrapping `json_encode`
@@ -64,6 +76,11 @@ use TwigCsFixer\Rules\Node\AbstractNodeRule;
  *  - **Custom flag combinations without `JSON_HEX_QUOT`** that happen to
  *    be safe by accident → false positive. Disable per Layer A with a
  *    reason (`twig-cs-fixer.md` § 3).
+ *  - **Script state across blocks.** The state resets at each `{% block %}`
+ *    and `{% macro %}`, so a block that opens inside a `<script>` of its
+ *    parent is checked as if outside it (a false positive, never a false
+ *    negative). The skip also trusts default flags: a print in a script
+ *    body with `JSON_UNESCAPED_SLASHES` is not reported.
  *  - **`_x()`-only translation payloads** are doctrinally allowed to use
  *    bare `|json_encode|raw` (see `create-attribute.md`); this carve-out
  *    lives in doctrine, not in the rule. Layer A disable per call site.
@@ -76,12 +93,18 @@ final class JsonEncodeHtmlAttrRule extends AbstractNodeRule
 	private const ESCAPE_STRATEGY = 'html_attr';
 	private const WARNING_MESSAGE = "|json_encode in HTML attribute context needs |e('html_attr') (or json_encode flag JSON_HEX_QUOT) — unescaped quotes break out of the attribute";
 
+	/**
+	 * True while the walker is between `<script …>` and `</script>` in the raw text.
+	 */
+	private bool $inScriptBody = false;
+
 	public function enterNode(Node $node, Environment $env): Node
 	{
 		if (!$node instanceof ModuleNode) {
 			return $node;
 		}
 
+		$this->inScriptBody = false;
 		$this->walkNode($node, [], false);
 
 		return $node;
@@ -102,7 +125,23 @@ final class JsonEncodeHtmlAttrRule extends AbstractNodeRule
 	 */
 	private function walkNode(Node $node, array $wrappingFilters, bool $inAttrContext): void
 	{
+		if ($node instanceof TextNode) {
+			$this->trackScriptState($node);
+
+			return;
+		}
+
+		if ($node instanceof BlockNode || $node instanceof MacroNode) {
+			// A block or macro body can render anywhere; start it outside a script.
+			$this->inScriptBody = false;
+		}
+
 		if ($node instanceof PrintNode) {
+			if ($this->inScriptBody) {
+				// JavaScript or JSON in a <script> body, not an HTML attribute.
+				return;
+			}
+
 			// Print output sinks into raw template HTML — attribute context.
 			$this->walkNode($node->getNode('expr'), [], true);
 
@@ -156,6 +195,24 @@ final class JsonEncodeHtmlAttrRule extends AbstractNodeRule
 			if ($child instanceof Node) {
 				$this->walkNode($child, [], $inAttrContext);
 			}
+		}
+	}
+
+	/**
+	 * Sets the script state from the last complete `<script …>` or `</script>` tag in the text.
+	 * A `<script` tag still open at the end of the text does not count: a print there sits in
+	 * one of its attributes.
+	 */
+	private function trackScriptState(TextNode $node): void
+	{
+		$data = $node->getAttribute('data');
+		if (!\is_string($data)) {
+			return;
+		}
+
+		if (preg_match_all('#<script\b[^>]*>|</script\s*>#i', $data, $matches) > 0) {
+			$last = end($matches[0]);
+			$this->inScriptBody = !str_starts_with($last, '</');
 		}
 	}
 
