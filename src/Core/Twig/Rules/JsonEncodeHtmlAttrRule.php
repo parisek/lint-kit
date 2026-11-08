@@ -17,6 +17,7 @@ use Twig\Node\IfNode;
 use Twig\Node\MacroNode;
 use Twig\Node\Node;
 use Twig\Node\PrintNode;
+use Twig\Node\SetNode;
 use Twig\Node\TextNode;
 use TwigCsFixer\Rules\Node\AbstractNodeRule;
 
@@ -85,8 +86,9 @@ use TwigCsFixer\Rules\Node\AbstractNodeRule;
  *  - **Custom flag combinations without `JSON_HEX_QUOT`** that happen to
  *    be safe by accident → false positive. Disable per Layer A with a
  *    reason (`twig-cs-fixer.md` § 3).
- *  - **Script state is conservative.** It resets at each `{% block %}` and
- *    `{% macro %}`, and after a branch that changes it. A print that is in a
+ *  - **Script state is conservative.** A `{% block %}`, a `{% macro %}` and a
+ *    `{% set %}` capture start outside a script, and the state is reset after
+ *    branches that end in different states. A print that is in a
  *    script body there is checked as if outside (a false positive, never a
  *    false negative). The skip also trusts default flags: a print in a
  *    script body with `JSON_UNESCAPED_SLASHES` is not reported.
@@ -156,9 +158,18 @@ final class JsonEncodeHtmlAttrRule extends AbstractNodeRule
 			return;
 		}
 
-		if ($node instanceof BlockNode || $node instanceof MacroNode) {
-			// A block or macro body can render anywhere; start it outside a script.
+		if ($node instanceof BlockNode || $node instanceof MacroNode || $node instanceof SetNode) {
+			// A block or macro body renders elsewhere, and a `{% set %}…{% endset %}` capture
+			// stores its text instead of emitting it here. Walk each from outside a script,
+			// then go on with the state of the surrounding text.
+			$outer = $this->scriptSnapshot();
 			$this->resetScriptState();
+			foreach ($node as $child) {
+				$this->walkNode($child, [], $inAttrContext);
+			}
+			$this->restoreScriptState($outer);
+
+			return;
 		}
 
 		if ($node instanceof IfNode || $node instanceof ForNode) {
