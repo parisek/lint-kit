@@ -1,7 +1,7 @@
 {# Fixture for JsonEncodeHtmlAttrRule. Each block describes the expected behavior. #}
 {# Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/json-encode-html-attr-fixture.twig #}
 {# Scoping: rule fires on |json_encode used inside PrintNode or ArrayExpression value, unless escape contract is satisfied or the print sits in a <script> body. Two safe shapes: |json_encode|e('html_attr'), or |json_encode(<flags including JSON_HEX_QUOT>)|raw. #}
-{# Expected: 12 warnings, 0 errors (JsonEncodeHtmlAttr) — one per FAIL block #}
+{# Expected: 14 warnings, 0 errors (JsonEncodeHtmlAttr) — one per FAIL block #}
 
 {# === FAIL × 1: bare |json_encode in raw HTML attribute === #}
 <div data-config="{{ payload|json_encode }}">A</div>
@@ -86,6 +86,18 @@
 
 {# === OK: a script body after a print in its tag attribute === #}
 <script data-a="{{ payload|json_encode|e('html_attr') }}">window.t = {{ payload|json_encode|raw }};</script>
+
+{# === FAIL × 1: a <script> inside an HTML comment opens nothing === #}
+<!-- <script> example --><div data-config="{{ payload|json_encode|raw }}">T</div>
+
+{# === FAIL × 1: a loop body that closes the <script> is walked from outside === #}
+<script>{% for item in items %}{{ item|json_encode|raw }}</script><div>{% endfor %}
+
+{# === OK: every if branch opens a <script>, so the print after it is in a script body === #}
+{% if a %}<script>{% else %}<script type="module">{% endif %}window.x = {{ payload|json_encode|raw }};</script>
+
+{# === OK: </scripture> in a script body does not close it === #}
+<script>window.s = "</scripture>"; window.x = {{ payload|json_encode|raw }};</script>
 
 {# === OK: a for loop inside a script body keeps the body state === #}
 <script>
