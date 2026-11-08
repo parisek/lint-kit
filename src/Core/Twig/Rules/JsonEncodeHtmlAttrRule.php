@@ -108,6 +108,7 @@ final class JsonEncodeHtmlAttrRule extends AbstractNodeRule
 	private const IN_SCRIPT_TAG = 'tag';
 	private const IN_SCRIPT_BODY = 'body';
 	private const IN_COMMENT = 'comment';
+	private const IN_OTHER_TAG = 'other-tag';
 
 	/**
 	 * Where the raw text stands, in document order: outside a script, inside an
@@ -335,9 +336,10 @@ final class JsonEncodeHtmlAttrRule extends AbstractNodeRule
 	/**
 	 * Advances the script state over one raw text chunk.
 	 *
-	 * Outside, it skips HTML comments and looks for an opening `<script` tag. Inside the tag,
-	 * it tracks quoted attribute values, so only an unquoted `>` ends the tag. Inside the body,
-	 * it looks for `</script`.
+	 * Outside, it skips HTML comments and passes over every tag. Inside a tag, it tracks quoted
+	 * attribute values, so only an unquoted `>` ends the tag, and a `<script>` inside a quoted
+	 * value is text. Only a `<script` tag leads into a body. Inside the body, it looks for
+	 * `</script`.
 	 */
 	private function trackScriptState(TextNode $node): void
 	{
@@ -350,10 +352,17 @@ final class JsonEncodeHtmlAttrRule extends AbstractNodeRule
 		$length = \strlen($data);
 		while ($offset < $length) {
 			if (self::OUTSIDE === $this->scriptState) {
-				if (1 !== preg_match('#<!--|<script(?=[\s/>]|$)#i', $data, $match, \PREG_OFFSET_CAPTURE, $offset)) {
+				// Any tag, not only `<script`: a `<script>` inside another tag's quoted attribute
+				// value is text, so the scanner must pass over that tag with its quotes.
+				if (1 !== preg_match('#<!--|<script(?=[\s/>]|$)|</?[a-z]#i', $data, $match, \PREG_OFFSET_CAPTURE, $offset)) {
 					return;
 				}
-				$this->scriptState = '<!--' === $match[0][0] ? self::IN_COMMENT : self::IN_SCRIPT_TAG;
+				$token = strtolower($match[0][0]);
+				$this->scriptState = match (true) {
+					'<!--' === $token => self::IN_COMMENT,
+					'<script' === $token => self::IN_SCRIPT_TAG,
+					default => self::IN_OTHER_TAG,
+				};
 				$this->scriptQuote = null;
 				$offset = $match[0][1] + \strlen($match[0][0]);
 				continue;
@@ -370,7 +379,7 @@ final class JsonEncodeHtmlAttrRule extends AbstractNodeRule
 				continue;
 			}
 
-			if (self::IN_SCRIPT_TAG === $this->scriptState) {
+			if (self::IN_SCRIPT_TAG === $this->scriptState || self::IN_OTHER_TAG === $this->scriptState) {
 				$char = $data[$offset++];
 				if (null !== $this->scriptQuote) {
 					if ($char === $this->scriptQuote) {
@@ -379,7 +388,8 @@ final class JsonEncodeHtmlAttrRule extends AbstractNodeRule
 				} elseif ('"' === $char || "'" === $char) {
 					$this->scriptQuote = $char;
 				} elseif ('>' === $char) {
-					$this->scriptState = self::IN_SCRIPT_BODY;
+					$this->scriptState = self::IN_SCRIPT_TAG === $this->scriptState ? self::IN_SCRIPT_BODY : self::OUTSIDE;
+					$this->scriptQuote = null;
 				}
 				continue;
 			}
