@@ -1,7 +1,7 @@
 {# Fixture for JsonEncodeHtmlAttrRule. Each block describes the expected behavior. #}
 {# Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/json-encode-html-attr-fixture.twig #}
 {# Scoping: rule fires on |json_encode used inside PrintNode or ArrayExpression value, unless escape contract is satisfied or the print sits in a <script> body. Two safe shapes: |json_encode|e('html_attr'), or |json_encode(<flags including JSON_HEX_QUOT>)|raw. #}
-{# Expected: 9 warnings, 0 errors (JsonEncodeHtmlAttr) — one per FAIL block #}
+{# Expected: 12 warnings, 0 errors (JsonEncodeHtmlAttr) — one per FAIL block #}
 
 {# === FAIL × 1: bare |json_encode in raw HTML attribute === #}
 <div data-config="{{ payload|json_encode }}">A</div>
@@ -74,3 +74,21 @@
 
 {# === FAIL × 1: after </script> the attribute check applies again === #}
 <div data-config="{{ payload|json_encode|raw }}">R</div>
+
+{# === FAIL × 1: a <script> that only one branch opens does not hide the next attribute === #}
+{% if enabled %}<script>{% endif %}<div data-config="{{ payload|json_encode|raw }}">S</div>{% if enabled %}</script>{% endif %}
+
+{# === FAIL × 1: a > inside a quoted attribute of the <script> tag does not end the tag === #}
+<script title="> {{ payload|json_encode|raw }}"></script>
+
+{# === FAIL × 1: a print in a quoted script tag attribute after an earlier print === #}
+<script data-a="{{ payload|json_encode|e('html_attr') }}" data-b="{{ payload|json_encode|raw }}"></script>
+
+{# === OK: a script body after a print in its tag attribute === #}
+<script data-a="{{ payload|json_encode|e('html_attr') }}">window.t = {{ payload|json_encode|raw }};</script>
+
+{# === OK: a for loop inside a script body keeps the body state === #}
+<script>
+	{% for item in items %}window.items.push({{ item|json_encode|raw }});{% endfor %}
+	{% if a %}window.a = {{ a|json_encode|raw }};{% else %}window.b = {{ b|json_encode|raw }};{% endif %}
+</script>

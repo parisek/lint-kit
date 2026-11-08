@@ -12,6 +12,8 @@ use Twig\Node\Expression\FilterExpression;
 use Twig\Node\Expression\FunctionExpression;
 use Twig\Node\ModuleNode;
 use Twig\Node\BlockNode;
+use Twig\Node\ForNode;
+use Twig\Node\IfNode;
 use Twig\Node\MacroNode;
 use Twig\Node\Node;
 use Twig\Node\PrintNode;
@@ -52,12 +54,17 @@ use TwigCsFixer\Rules\Node\AbstractNodeRule;
  *   4. **Script body skip.** A `PrintNode` between `<script …>` and
  *      `</script>` is JavaScript or JSON, not an attribute, so it is
  *      skipped. The AST carries no HTML context, so the walker reads the
- *      raw `TextNode` data in document order and keeps the state of the
- *      last `<script …>` or `</script>` tag it saw. A print inside the
- *      attributes of the `<script` tag itself (`<script data-x="{{ … }}">`)
- *      is still checked: the opening tag is not closed yet. Default
- *      `json_encode` escapes `/`, so the value cannot close the element
- *      with `</script>`.
+ *      raw `TextNode` data in document order with a small scanner: outside,
+ *      inside a `<script` tag (with the open quote, so a `>` in a quoted
+ *      attribute value does not end the tag), or inside a script body. Only
+ *      a print in a script body is skipped. A print in an attribute of the
+ *      `<script` tag itself (`<script data-x="{{ … }}">`) is still checked.
+ *      The branches of `{% if %}` and `{% for %}` each start from the state
+ *      before the tag. When a branch ends in another state, the state after
+ *      the tag is unknown and the walker treats it as outside, so a
+ *      `<script>` that only some branches open never hides a finding.
+ *      Default `json_encode` escapes `/`, so the value cannot close the
+ *      element with `</script>`.
  *   5. Otherwise, fire.
  *
  * Walking the chain — Twig nests outer filters as parents
@@ -76,11 +83,11 @@ use TwigCsFixer\Rules\Node\AbstractNodeRule;
  *  - **Custom flag combinations without `JSON_HEX_QUOT`** that happen to
  *    be safe by accident → false positive. Disable per Layer A with a
  *    reason (`twig-cs-fixer.md` § 3).
- *  - **Script state across blocks.** The state resets at each `{% block %}`
- *    and `{% macro %}`, so a block that opens inside a `<script>` of its
- *    parent is checked as if outside it (a false positive, never a false
- *    negative). The skip also trusts default flags: a print in a script
- *    body with `JSON_UNESCAPED_SLASHES` is not reported.
+ *  - **Script state is conservative.** It resets at each `{% block %}` and
+ *    `{% macro %}`, and after a branch that changes it. A print that is in a
+ *    script body there is checked as if outside (a false positive, never a
+ *    false negative). The skip also trusts default flags: a print in a
+ *    script body with `JSON_UNESCAPED_SLASHES` is not reported.
  *  - **`_x()`-only translation payloads** are doctrinally allowed to use
  *    bare `|json_encode|raw` (see `create-attribute.md`); this carve-out
  *    lives in doctrine, not in the rule. Layer A disable per call site.
@@ -93,10 +100,20 @@ final class JsonEncodeHtmlAttrRule extends AbstractNodeRule
 	private const ESCAPE_STRATEGY = 'html_attr';
 	private const WARNING_MESSAGE = "|json_encode in HTML attribute context needs |e('html_attr') (or json_encode flag JSON_HEX_QUOT) — unescaped quotes break out of the attribute";
 
+	private const OUTSIDE = 'outside';
+	private const IN_SCRIPT_TAG = 'tag';
+	private const IN_SCRIPT_BODY = 'body';
+
 	/**
-	 * True while the walker is between `<script …>` and `</script>` in the raw text.
+	 * Where the raw text stands, in document order: outside a script, inside an
+	 * opening `<script` tag, or inside a script body.
 	 */
-	private bool $inScriptBody = false;
+	private string $scriptState = self::OUTSIDE;
+
+	/**
+	 * The quote character of the open attribute value while inside a `<script` tag.
+	 */
+	private ?string $scriptQuote = null;
 
 	public function enterNode(Node $node, Environment $env): Node
 	{
@@ -104,7 +121,7 @@ final class JsonEncodeHtmlAttrRule extends AbstractNodeRule
 			return $node;
 		}
 
-		$this->inScriptBody = false;
+		$this->resetScriptState();
 		$this->walkNode($node, [], false);
 
 		return $node;
@@ -133,11 +150,17 @@ final class JsonEncodeHtmlAttrRule extends AbstractNodeRule
 
 		if ($node instanceof BlockNode || $node instanceof MacroNode) {
 			// A block or macro body can render anywhere; start it outside a script.
-			$this->inScriptBody = false;
+			$this->resetScriptState();
+		}
+
+		if ($node instanceof IfNode || $node instanceof ForNode) {
+			$this->walkBranches($node, $inAttrContext);
+
+			return;
 		}
 
 		if ($node instanceof PrintNode) {
-			if ($this->inScriptBody) {
+			if (self::IN_SCRIPT_BODY === $this->scriptState) {
 				// JavaScript or JSON in a <script> body, not an HTML attribute.
 				return;
 			}
@@ -199,9 +222,50 @@ final class JsonEncodeHtmlAttrRule extends AbstractNodeRule
 	}
 
 	/**
-	 * Sets the script state from the last complete `<script …>` or `</script>` tag in the text.
-	 * A `<script` tag still open at the end of the text does not count: a print there sits in
-	 * one of its attributes.
+	 * Walks each branch of an `{% if %}` or `{% for %}` from the script state before the tag.
+	 * A branch may not run, so the state after the tag is that state only when every branch
+	 * ends in it. Otherwise it is unknown, and outside is the choice that hides no finding.
+	 */
+	private function walkBranches(Node $node, bool $inAttrContext): void
+	{
+		$branches = [];
+		foreach ($node as $child) {
+			// `IfNode` keeps every condition and body in one `tests` node.
+			if ($node instanceof IfNode && $child === $node->getNode('tests')) {
+				foreach ($child as $test) {
+					$branches[] = $test;
+				}
+				continue;
+			}
+			$branches[] = $child;
+		}
+
+		$before = [$this->scriptState, $this->scriptQuote];
+		$same = true;
+		foreach ($branches as $branch) {
+			[$this->scriptState, $this->scriptQuote] = $before;
+			$this->walkNode($branch, [], $inAttrContext);
+			$same = $same && [$this->scriptState, $this->scriptQuote] === $before;
+		}
+
+		if ($same) {
+			[$this->scriptState, $this->scriptQuote] = $before;
+		} else {
+			$this->resetScriptState();
+		}
+	}
+
+	private function resetScriptState(): void
+	{
+		$this->scriptState = self::OUTSIDE;
+		$this->scriptQuote = null;
+	}
+
+	/**
+	 * Advances the script state over one raw text chunk.
+	 *
+	 * Outside, it looks for an opening `<script` tag. Inside the tag, it tracks quoted attribute
+	 * values, so only an unquoted `>` ends the tag. Inside the body, it looks for `</script`.
 	 */
 	private function trackScriptState(TextNode $node): void
 	{
@@ -210,9 +274,38 @@ final class JsonEncodeHtmlAttrRule extends AbstractNodeRule
 			return;
 		}
 
-		if (preg_match_all('#<script\b[^>]*>|</script\s*>#i', $data, $matches) > 0) {
-			$last = end($matches[0]);
-			$this->inScriptBody = !str_starts_with($last, '</');
+		$offset = 0;
+		$length = \strlen($data);
+		while ($offset < $length) {
+			if (self::OUTSIDE === $this->scriptState) {
+				if (1 !== preg_match('#<script(?=[\s/>]|$)#i', $data, $match, \PREG_OFFSET_CAPTURE, $offset)) {
+					return;
+				}
+				$this->scriptState = self::IN_SCRIPT_TAG;
+				$this->scriptQuote = null;
+				$offset = $match[0][1] + \strlen($match[0][0]);
+				continue;
+			}
+
+			if (self::IN_SCRIPT_TAG === $this->scriptState) {
+				$char = $data[$offset++];
+				if (null !== $this->scriptQuote) {
+					if ($char === $this->scriptQuote) {
+						$this->scriptQuote = null;
+					}
+				} elseif ('"' === $char || "'" === $char) {
+					$this->scriptQuote = $char;
+				} elseif ('>' === $char) {
+					$this->scriptState = self::IN_SCRIPT_BODY;
+				}
+				continue;
+			}
+
+			if (1 !== preg_match('#</script#i', $data, $match, \PREG_OFFSET_CAPTURE, $offset)) {
+				return;
+			}
+			$this->resetScriptState();
+			$offset = $match[0][1] + \strlen($match[0][0]);
 		}
 	}
 
