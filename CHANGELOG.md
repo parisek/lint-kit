@@ -4,6 +4,8 @@ All notable changes are listed here, grouped by rule set once rules exist. The f
 
 ## [Unreleased]
 
+## [0.4.1] — 2026-11-08
+
 ### Fixed
 
 - `JsonEncodeHtmlAttrRule` (Core) no longer reports a print in a `<script>` body (`window.x = {{ value|json_encode|raw }};`, a JSON-LD block). That print is JavaScript or JSON, not an HTML attribute. The AST carries no HTML context, so the rule scans the raw template text in document order. A print in an attribute of the `<script` tag itself is still reported, also after a quoted `>`. A `<script>` that only one branch of `{% if %}` or `{% for %}` opens does not hide a later finding. portadesign/tailwind-base#1011.
