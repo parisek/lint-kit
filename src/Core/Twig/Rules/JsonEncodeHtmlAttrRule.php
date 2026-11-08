@@ -269,9 +269,10 @@ final class JsonEncodeHtmlAttrRule extends AbstractNodeRule
 			// state. If it does, a later pass starts elsewhere, so the real walk starts outside.
 			$body = $node->getNode('body');
 			$this->restoreScriptState($before);
+			$wasSilent = $this->silent;
 			$this->silent = true;
 			$this->walkNode($body, [], $inAttrContext);
-			$this->silent = false;
+			$this->silent = $wasSilent;
 			$stable = $this->scriptSnapshot() === $before;
 
 			$this->restoreScriptState($stable ? $before : [self::OUTSIDE, null]);
@@ -323,8 +324,9 @@ final class JsonEncodeHtmlAttrRule extends AbstractNodeRule
 	/**
 	 * Advances the script state over one raw text chunk.
 	 *
-	 * Outside, it skips HTML comments and looks for an opening `<script` tag. Inside the tag, it tracks quoted attribute
-	 * values, so only an unquoted `>` ends the tag. Inside the body, it looks for `</script`.
+	 * Outside, it skips HTML comments and looks for an opening `<script` tag. Inside the tag,
+	 * it tracks quoted attribute values, so only an unquoted `>` ends the tag. Inside the body,
+	 * it looks for `</script`.
 	 */
 	private function trackScriptState(TextNode $node): void
 	{
