@@ -1,0 +1,45 @@
+{#
+FontSizePxRule fixture.
+
+Run: vendor/bin/twig-cs-fixer lint --config tests/config/twig-wordpress.php tests/Fixtures/Twig/font-size-px-fixture.twig
+Expected: 6 warnings, 0 errors (FontSizePx)
+#}
+
+{# === FAIL: off-scale font size === #}
+<p class="text-[50px]">x</p>
+
+{# === FAIL: variant prefix === #}
+<p class="lg:text-[66px]">x</p>
+
+{# === FAIL: fractional px === #}
+<p class="text-[13.5px]">x</p>
+
+{# === FAIL: px line height, even with a named size === #}
+<p class="text-sm leading-[20px]">x</p>
+
+{# === FAIL: text and leading on one line dedupe to ONE warning === #}
+<p class="text-[11px] leading-[14px]">x</p>
+
+{# === FAIL: inside a create_attribute class array (STRING_TYPE) === #}
+{% set attrs = create_attribute({
+	class: [
+		'text-[15px]',
+	],
+}) %}
+<span{{ attrs }}>x</span>
+
+{# === OK: a px value with a named size is left to ScaleValueRule === #}
+<p class="text-[16px]">x</p>
+<p class="text-[24px]">x</p>
+
+{# === OK: rem, clamp, var, colour === #}
+<p class="text-[3.125rem] leading-[1.4]">x</p>
+<p class="text-[clamp(1rem,2vw,2rem)]">x</p>
+<p class="text-[var(--text-label)]">x</p>
+<p class="text-[#ff0000]">x</p>
+
+{# === OK: tracking and look-alike identifiers === #}
+<p class="tracking-[1px]">x</p>
+<p class="my-text-[12px] prefix-leading-[14px]">x</p>
+
+{# === OK: a Twig comment is not scanned: text-[50px] === #}

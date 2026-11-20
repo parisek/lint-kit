@@ -40,8 +40,8 @@ use TwigCsFixer\Token\Tokens;
  *
  * Explicitly EXCLUDED (separate concerns, sub-pixel precision matters):
  *   border, border-{x,y,t,r,b,l}, outline, ring, divide
- *   text, leading, tracking, indent (handled by HeadingArbitraryFontSizeRule
- *     and project preference for `text-[Nrem]` in hand-tuned typography)
+ *   text, leading, tracking, indent (`text-[Npx]` and `leading-[Npx]` are
+ *     FontSizePxRule's; headings also HeadingArbitraryFontSizeRule's)
  *
  * False-positive guards:
  *  - `calc()` expressions are skipped — `min-h-[calc(100vh-80px)]` legitimately
