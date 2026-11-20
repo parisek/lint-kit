@@ -4,6 +4,10 @@ All notable changes are listed here, grouped by rule set once rules exist. The f
 
 ## [Unreleased]
 
+### Added
+
+- `FontSizePxRule` (Core): warns on `text-[Npx]` with no named Tailwind size and on every `leading-[Npx]`. A px font size ignores the reader's default font size; the message suggests the rem value (px / 16). A px value with a named size stays with `ScaleValueRule`, so one class gets one warning. Expect new warnings in a project with px font sizes. portadesign/tailwind-base#1089, #24.
+
 ## [0.4.1] — 2026-11-08
 
 ### Fixed

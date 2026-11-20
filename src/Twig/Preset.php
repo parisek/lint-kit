@@ -201,6 +201,7 @@ final class Preset
             new Core\TransitionAllRule(),
             new Core\CountUpNumberInHtmlRule(),
             new Core\ArbitraryPxRule(),
+            new Core\FontSizePxRule(),
             new Core\UniqueIdRequiredRule(),
             new Core\LinkFieldShapeRule($componentRoots),
         ];
